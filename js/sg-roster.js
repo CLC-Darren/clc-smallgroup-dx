@@ -18,7 +18,7 @@
     let unsubs = [], loaded = false, slow = false, slowTimer = null;
     // 預設只看「聚會小組」，要看其他狀態再從表頭切換
     // 新朋友名單預設看全部、最新的在最上面
-    const filter = { q: '', who: '', group: (() => { try { return localStorage.getItem('sg_scope') || 'all'; } catch (e) { return 'all'; } })(), status: 'all', sort: IS_INTAKE ? 'new' : 'name' };
+    const filter = { q: '', who: '', group: (() => { try { return localStorage.getItem('sg_scope') || 'all'; } catch (e) { return 'all'; } })(), status: 'all', ministry: 'all', sort: IS_INTAKE ? 'new' : 'name' };
     let ptab = 'info';          // 個人頁分段：info 資料／course 課程／care 關懷
     let selectedId = null;    // 電腦版選取的人
     let editor = null;        // { id|null, draft:{}, photo:{thumb,full}|null, removePhoto:bool, dirty:bool, where:'inspector'|'sheet' }
@@ -51,6 +51,7 @@
     let scopeKey = '';
     SG.onAccess(a => {
       access = a;
+      if (!a.canView) { location.replace('index.html'); return; }
       $('gateChecking').classList.add('hidden');
       $('gateLogin').classList.toggle('hidden', a.canView);
       $('app').classList.toggle('hidden', !a.canView);
@@ -127,6 +128,10 @@
         s.innerHTML = `<option value="all">狀態：全部</option>` + statusList().map(x => `<option value="${SG.esc(x)}">${SG.esc(x)}</option>`).join('') + `<option value="">${EMPTY_STATUS}</option>`;
         s.value = [...s.options].some(o => o.value === filter.status) ? filter.status : 'all';
       });
+      document.querySelectorAll('[data-filter="ministry"]').forEach(s => {
+        s.innerHTML = `<option value="all">服事：全部</option>` + (options.ministries || []).map(x => `<option value="${SG.esc(x)}">${SG.esc(x)}</option>`).join('');
+        s.value = filter.ministry;
+      });
       renderHeaders();
     }
 
@@ -158,13 +163,15 @@
       set('sortBirth', '生日' + (barrow || ''), !!barrow);
       set('group', filter.group === 'all' ? '小組' : (filter.group === '' ? '小組：未分組' : '小組：' + (g ? g.name : '')), filter.group !== 'all');
       set('status', filter.status === 'all' ? '狀態' : '狀態：' + (filter.status || EMPTY_STATUS), filter.status !== 'all');
+      set('ministry', filter.ministry === 'all' ? '目前服事' : '服事：' + filter.ministry, filter.ministry !== 'all');
     }
-    const COL_KEY = { sortName: 'sort', sortBirth: 'sort', group: 'group', status: 'status', export: 'export' };
+    const COL_KEY = { sortName: 'sort', sortBirth: 'sort', group: 'group', status: 'status', ministry: 'ministry', export: 'export' };
     function colItems(col) {
       if (col === 'sortName') return IS_INTAKE
         ? [['new', SORTS.new[0]], ['old', SORTS.old[0]], null, ['name', SORTS.name[0]], ['name-desc', SORTS['name-desc'][0]]]
         : [['name', SORTS.name[0]], ['name-desc', SORTS['name-desc'][0]], null, ['no', SORTS.no[0]], ['no-desc', SORTS['no-desc'][0]]];
       if (col === 'sortBirth') return [['birth', SORTS.birth[0]], ['birth-desc', SORTS['birth-desc'][0]], null, ['bmonth', SORTS.bmonth[0]]];
+      if (col === 'ministry') return [['all', '所有服事'], null, ...(options.ministries || []).map(m => [m, m])];
       if (col === 'export') return [['pdf', '下載 PDF（A4 橫式，可列印）'], ['jpg', '下載 JPG 圖片']];
       if (col === 'group') {
         const list = groupsForWho();
@@ -181,7 +188,7 @@
       if (!list.length) { SG.toast('目前沒有人可以下載', 'error'); return; }
       const g = groupMap[filter.group];
       const parts = [filter.who || '', filter.group === 'all' ? '' : (filter.group === '' ? '未分組' : g && g.name),
-        filter.status === 'all' ? '' : (filter.status || EMPTY_STATUS), filter.q ? `搜尋「${filter.q}」` : ''].filter(Boolean);
+        filter.status === 'all' ? '' : (filter.status || EMPTY_STATUS), filter.ministry && filter.ministry !== 'all' ? filter.ministry : '', filter.q ? `搜尋「${filter.q}」` : ''].filter(Boolean);
       const now = new Date(), d = `${now.getFullYear() - 1911}.${now.getMonth() + 1}.${now.getDate()}`;
       SG.toast('正在產生檔案…');
       try {
@@ -246,6 +253,7 @@
         if (filter.who && SG.personWho(p, groupMap) !== filter.who) return false;
         if (filter.group !== 'all' && (filter.group === '' ? groupMap[p.groupId] : p.groupId !== filter.group)) return false;
         if (filter.status !== 'all' && statusOf(p) !== filter.status) return false;
+        if (filter.ministry && filter.ministry !== 'all' && !(p.ministries || []).includes(filter.ministry)) return false;
         if (!q) return true;
         if (String(p.name || '').toLowerCase().includes(q)) return true;
         if (String(p.address || '').includes(filter.q) || String(p.note || '').includes(filter.q)) return true;
@@ -283,7 +291,7 @@
         const g = groupMap[p.groupId];
         return `<tr data-id="${SG.esc(p.id)}" aria-selected="${p.id === selectedId}" tabindex="0">
           <td><div style="display:flex;align-items:center;gap:10px">${SG.avatarHtml(p, 32)}<span style="font-weight:700">${SG.esc(p.name)}</span></div></td>
-          <td>${(p.ministries || []).length ? SG.esc(p.ministries.join('、')) : '<span class="m-muted">—</span>'}</td>
+          <td>${IS_INTAKE ? (p.gender || '<span class="m-muted">—</span>') : (p.ministries || []).length ? SG.esc(p.ministries.join('、')) : '<span class="m-muted">—</span>'}</td>
           <td>${SG.formatRoc(p.birthday) || '<span class="m-muted">—</span>'}</td>
           <td>${SG.esc(p.mobile || p.phone) || '<span class="m-muted">—</span>'}</td>
           <td>${g ? SG.esc(g.name) : p.category === '全職同工' ? '全職同工' : '<span class="m-muted">未分組</span>'}</td>
@@ -350,7 +358,7 @@
           ${sms ? `<a class="m-act" href="sms:${sms}" style="background:#2C2C2E;color:#fff">${ICON_MSG}簡訊</a>` : ''}
           ${p.address ? `<a class="m-act" href="https://maps.apple.com/?q=${encodeURIComponent(p.address)}" target="_blank" rel="noopener" style="background:#2C2C2E;color:#fff">${ICON_MAP}地圖</a>` : ''}
         </div>
-        ${canJoin(p) ? `<button type="button" class="m-btn" data-join-sheet="${SG.esc(p.id)}" style="width:100%;margin-bottom:14px;background:#F2B33D;color:#3B2A10;min-height:50px;font-size:17px">＋ 加入組員通訊錄</button>` : ''}
+        ${canJoin(p) ? `<button type="button" class="m-btn" data-join-sheet="${SG.esc(p.id)}" style="width:100%;margin-bottom:14px;background:#F2B33D;color:#3B2A10;min-height:50px;font-size:17px">＋ 加入名冊</button>` : ''}
         <div style="display:flex;flex-direction:column;gap:14px">
           ${g1 ? `<div class="m-group">${g1}</div>` : ''}
           ${g2 ? `<div class="m-group">${g2}</div>` : ''}
@@ -417,8 +425,8 @@
         </div>
         ${!isNew && (SG.phoneDigits(d.mobile) || SG.phoneDigits(d.phone)) ? `<a class="m-btn m-btn-teal" href="tel:${SG.phoneDigits(d.mobile) || SG.phoneDigits(d.phone)}">${ICON_PHONE.replace(/22/g, '18')} 撥打 ${SG.esc(d.mobile || d.phone)}</a>` : ''}
         ${IS_INTAKE && !isNew ? (d.personId
-          ? `<a class="m-btn" href="members.html" style="background:#DFF7E5;color:#1B6B34">✓ 已在組員通訊錄裡</a>`
-          : canJoin(d) ? `<button type="button" class="m-btn" data-join style="background:#F2B33D;color:#3B2A10;min-height:48px;font-size:16px">＋ 加入組員通訊錄</button>` : '') : ''}
+          ? `<a class="m-btn" href="members.html" style="background:#DFF7E5;color:#1B6B34">✓ 已在名冊裡</a>`
+          : canJoin(d) ? `<button type="button" class="m-btn" data-join style="background:#F2B33D;color:#3B2A10;min-height:48px;font-size:16px">＋ 加入名冊</button>` : '') : ''}
         <div class="m-group">
           ${field('name', '姓名＊', text('name', d.name, ' maxlength="30" autocomplete="off"'))}
           <div class="m-row"><span class="m-lab">性別</span><div class="m-lseg" data-lseg>
@@ -749,7 +757,7 @@
           const text = root.querySelector('#careText').value.trim();
           if (!text) { SG.toast('請先寫下關懷內容', 'error'); return; }
           const date = root.querySelector('#careDate').value || today();
-          const logs = [{ date, text, by: '區長' }, ...(p.careLogs || [])].sort((a, b) => String(b.date).localeCompare(String(a.date)));
+          const logs = [{ date, text, by: (persons.find(x => x.id === (window.SGU && SGU.session.personId)) || {}).name || '小組長' }, ...(p.careLogs || [])].sort((a, b) => String(b.date).localeCompare(String(a.date)));
           savePart(root, { careLogs: logs }, '已新增關懷紀錄'); return;
         }
         const del = e.target.closest('[data-care-del]');
@@ -759,7 +767,17 @@
         const p = persons.find(x => x.id === (id === 'sheetBody' ? sheetId : selectedId));
         if (!p) return;
         const c = e.target.closest('[data-course]');
-        if (c) { const next = { ...(p.courses || {}) }; if (c.checked) next[c.dataset.course] = today(); else delete next[c.dataset.course]; savePart(root, { courses: next }); return; }
+        if (c) {
+          const next = { ...(p.courses || {}) }; if (c.checked) next[c.dataset.course] = today(); else delete next[c.dataset.course];
+          savePart(root, { courses: next });
+          if (c.checked) {
+            const cat = (options.courses || []).find(k => k.items.some(i => i.id === c.dataset.course));
+            const text = c.dataset.course === 'bap' ? '今天受洗了！歡迎成為神家的一份子 💧' : cat && /^c\d$/.test(cat.id) && cat.items.every(i => next[i.id]) ? `完成了 ${cat.title} 🎓` : '';
+            if (text) window.db.collection('posts').add({ type: 'milestone', author: p.id, groupId: p.groupId || '', scope: 'district', badge: c.dataset.course === 'bap' ? 'bap' : cat.id, text,
+              reactions: { amen: [], heart: [] }, prayedBy: [], comments: [], createdAt: SG.serverTime() }).then(() => SG.toast('已在動態牆發佈里程碑 🎉'));
+          }
+          return;
+        }
         const d = e.target.closest('[data-cdate]');
         if (d) savePart(root, { courses: { ...(p.courses || {}), [d.dataset.cdate]: d.value || 'done' } }, '已更新完成日期');
       });

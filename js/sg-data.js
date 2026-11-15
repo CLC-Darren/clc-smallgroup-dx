@@ -325,9 +325,19 @@
     box._timer = setTimeout(() => box.classList.remove('show'), kind === 'error' ? 4500 : 2200);
   };
 
-  /** 靜態階段：沒有登入，一律以「區長」身分顯示（接 Firebase 後改回讀登入狀態）。 */
+  /** 靜態階段：身分來自登入頁選的預覽身分（sg_session）。區長＝全部可改；小組長＝自己小組可看可改；組員看不到名冊。 */
   SG.onAccess = function (callback) {
-    setTimeout(() => callback({ canView: true, isAdmin: true, isViewer: false, isLeader: false, isStaff: true,
-      scopeGroups: [], leadGroups: [], leadDistricts: [] }), 0);
+    const s = (window.SGU && SGU.session) || {};
+    setTimeout(() => {
+      if (s.role === 'district') return callback({ canView: true, isAdmin: true, isViewer: false, isLeader: false, isStaff: true, scopeGroups: [], leadGroups: [], leadDistricts: [] });
+      if (s.role === 'leader') {
+        window.db.collection('persons').doc(s.personId).get().then(d => {
+          const gid = d.exists ? d.data().groupId : '';
+          callback({ canView: true, isAdmin: false, isViewer: false, isLeader: true, isStaff: false, scopeGroups: gid ? [gid] : [], leadGroups: gid ? [gid] : [], leadDistricts: [] });
+        });
+        return;
+      }
+      callback({ canView: false, isAdmin: false, isViewer: false, isLeader: false, isStaff: false, scopeGroups: [], leadGroups: [], leadDistricts: [] });
+    }, 0);
   };
 })();

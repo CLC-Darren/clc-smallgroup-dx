@@ -3,28 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
-  <title>漢威牧區管理 | 總覽</title>
+  <title>CLC Small Group | 首頁</title>
   <script>try{var t=localStorage.getItem('sg_theme');if(t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.classList.add('dark')}catch(e){}</script>
-  <link rel="stylesheet" href="css/sg-app.css?v=20261116a">
+  <link rel="stylesheet" href="css/sg-roster.css?v=20261116b">
+  <link rel="stylesheet" href="css/sg-app.css?v=20261116b">
 </head>
-<body data-page="home">
-  <main class="sg-main"><div class="sg-wrap">
-    <h1 class="sg-title">總覽</h1>
-    <p class="sg-sub">打開就知道這週該關心誰。這一頁在第 2 批製作。</p>
-    <section class="sg-card"><h2>本週提醒</h2>
-      <div class="sg-item"><span class="sg-ic" aria-hidden="true">🎂</span><span class="sg-txt">當月壽星<small>本月生日的組員，可以送祝福</small></span><span class="sg-badge">第 2 批</span></div>
-      <div class="sg-item"><span class="sg-ic" aria-hidden="true">💛</span><span class="sg-txt">需要關懷<small>很久沒來、連續缺席、課程進度落後</small></span><span class="sg-badge">第 2 批</span></div>
-      <div class="sg-item"><span class="sg-ic" aria-hidden="true">🙌</span><span class="sg-txt">還沒參與服事<small>鼓勵投入服事的名單</small></span><span class="sg-badge">第 2 批</span></div>
-    </section>
-    <section class="sg-card"><h2>近期活動</h2>
-      <div class="sg-item"><span class="sg-ic" aria-hidden="true">📅</span><span class="sg-txt">活動行事曆<small>經歷神、婚姻成長營、牧區出遊……</small></span><span class="sg-badge">第 3 批</span></div>
-    </section>
-    <section class="sg-card"><h2>年度大總表</h2>
-      <div class="sg-item"><span class="sg-ic" aria-hidden="true">📊</span><span class="sg-txt">各小組・每半年<small>週平均人數、LINE 人數、安德烈探訪、經歷神、受洗、C1～C3、極限讀經、門徒班；自動算＋可手動調整</small></span><span class="sg-badge">第 2 批</span></div>
-      <div class="sg-item"><span class="sg-ic" aria-hidden="true">📈</span><span class="sg-txt">歷年趨勢<small>2019 起的牧區成長曲線</small></span><span class="sg-badge">第 2 批</span></div>
-    </section>
-
-  </div></main>
-  <script src="js/sg-shell.js?v=20261116a"></script>
+<body data-page="home" data-roles="district,leader,member">
+  <main class="sg-main">
+    <div class="sg-appbar" id="sgAppbar"><div style="flex:1;min-width:0"><p class="sg-hello" id="hello">Hello</p><p class="sg-verse" id="verse"></p></div></div>
+    <div class="sg-page"><div class="sg-cols">
+      <div class="sg-stack" id="mainCol">
+        <section class="sg-card hidden" id="taskCard"></section>
+        <section class="sg-card hidden" id="leadCard"></section>
+        <div id="sideSlotMobile" class="sg-stack"></div>
+        <section class="sg-card"><div class="sg-compose"><span id="meAvatar"></span><button type="button" class="fake" data-compose="mood">分享點什麼…</button></div>
+          <div class="sg-compose-types"><button type="button" data-compose="qt">📖 QT</button><button type="button" data-compose="testimony">✨ 見證</button><button type="button" data-compose="prayer">🙏 代禱</button><button type="button" data-compose="gift">🎁 送卡</button></div></section>
+        <div class="sg-chipbar" id="feedFilter"></div>
+        <div class="sg-stack" id="feed"></div>
+      </div>
+      <aside class="sg-stack" id="sideCol"></aside>
+    </div></div>
+  </main>
+  <script src="js/sg-seed-static.js?v=20261116b"></script>
+  <script src="js/sg-mock-data.js?v=20261116b"></script>
+  <script src="js/sg-mockdb.js?v=20261116b"></script>
+  <script src="js/sg-shell.js?v=20261116b"></script>
+  <script src="js/sg-data.js?v=20261116b"></script>
+  <script src="js/sg-feed.js?v=20261116b"></script>
+  <script src="js/sg-home.js?v=20261116b"></script>
 </body>
 </html>
