@@ -36,8 +36,8 @@
     { id: 'g_jianyu', name: '建宇小組', order: 1, active: true, size: 13, leader: '王建宇', founded: '2016-03', note: '' },
     { id: 'g_weixun', name: '威勛小組', order: 2, active: true, size: 10, leader: '林威勛', founded: '2017-09', note: '2026.3 分植書豪小組' },
     { id: 'g_shuhao', name: '書豪小組', order: 3, active: true, size: 11, leader: '黃書豪', founded: '2026-03', from: 'g_weixun', note: '2026.3 自威勛小組分植' },
-    { id: 'g_zhongxiong', name: '忠雄小組', order: 4, active: true, size: 9, leader: '吳忠雄', founded: '2019-12', note: '2019.12 分植' },
-    { id: 'g_qihong', name: '啟宏小組', order: 5, active: false, size: 0, leader: '', founded: '2024-10', from: 'g_jianyu', note: '2024.10 自建宇小組分植' },
+    { id: 'g_zhongxiong', name: '忠雄小組', order: 4, active: true, size: 9, leader: '吳忠雄', founded: '2019-12', note: '2019.12 分植；2026.9 啟宏小組併入' },
+    { id: 'g_qihong', name: '啟宏小組', order: 5, active: false, size: 0, leader: '', founded: '2024-10', from: 'g_jianyu', note: '2024.10 自建宇小組分植；2026.9 併入忠雄小組', mergedInto: 'g_zhongxiong' },
     { id: 'g_zongjian', name: '宗鍵小組', order: 6, active: false, size: 0, leader: '', founded: '2023-01', note: '2023 加入、2025 離開牧區' },
     { id: 'g_huiru', name: '暉儒小組', order: 7, active: false, size: 0, leader: '', founded: '2016-01', note: '2024 離開牧區' },
     { id: 'g_qiming', name: '啟名小組', order: 8, active: false, size: 0, leader: '', founded: '2023-01', note: '2023 加入、2024 離開牧區' }
@@ -64,7 +64,7 @@
     const ms = Date.now();
     store.districts.d_hanwei = { name: '漢威牧區', order: 1 };
     GROUPS.forEach(g => {
-      store.groups[g.id] = { name: g.name, order: g.order, active: g.active, districtId: 'd_hanwei', gender: '男', founded: g.founded, from: g.from || '', note: g.note };
+      store.groups[g.id] = { name: g.name, order: g.order, active: g.active, districtId: 'd_hanwei', gender: '男', founded: g.founded, from: g.from || '', mergedInto: g.mergedInto || '', note: g.note };
     });
     store.options.lists = {
       statuses: ['委身小組', '新加入', '只來聚會', '很久沒來', '已離開', '其他'],
