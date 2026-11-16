@@ -133,6 +133,8 @@
     return got;
   };
 
+  // 在 DX 的 App 框（iframe）裡開：不顯示自己的 Header（DX 已經有一條）
+  try { if (window.self !== window.top) document.documentElement.classList.add('sg-embed'); } catch (e) { document.documentElement.classList.add('sg-embed'); }
   // ---------- Header（DX 標準） ----------
   const hd = document.createElement('header');
   hd.className = 'sg-hd';
@@ -169,6 +171,15 @@
   bar.innerHTML = TABS.map(t => link(t, 24)).join('');
   hd.after(side);
   document.body.append(bar);
+  // 世界／我的領地：導覽放在地圖上（Islanders 式圓形按鈕），不占左側
+  const mapBox = document.querySelector('.sg-world-map');
+  if (mapBox) {
+    document.body.classList.add('sg-mapnav');
+    const hud = document.createElement('nav');
+    hud.className = 'sg-hud'; hud.setAttribute('aria-label', '主選單');
+    hud.innerHTML = TABS.map(([k, href, label]) => `<a href="${href}"${k === curTab ? ' aria-current="page"' : ''}><span class="o">${icon(k, 22)}</span><span>${label}</span></a>`).join('');
+    mapBox.append(hud);
+  }
 
   // ---------- App 列：標題、預覽身分、齒輪 ----------
   const appbar = $('sgAppbar');

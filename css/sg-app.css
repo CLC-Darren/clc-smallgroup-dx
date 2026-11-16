@@ -262,25 +262,49 @@ html.dark #sheetBody .sg-ptab button[aria-pressed="true"] { background: #636366;
 .m-sheet { top: 0; }
 
 /* ---------- P1-0：世界／我的領地（地圖固定、下方面板往上蓋） ---------- */
-.sg-world-map { position: sticky; top: var(--sg-hd); height: 58vh; overflow: hidden; background: #9CCFD8; z-index: 0; }
-.sg-world-map svg { width: 100%; height: 100%; display: block; }
+.sg-world-map { position: sticky; top: var(--sg-hd); height: 58vh; overflow: hidden; background: #57BFC4; z-index: 0; }
+.sg-world-map > svg { width: 100%; height: 100%; display: block; }
 .sg-demo-tag { position: absolute; left: 10px; bottom: 34px; font-size: 11px; font-weight: 700; color: #fff; background: rgba(43,36,32,.6); padding: 3px 8px; border-radius: 999px; }
 .sg-map-chip { position: absolute; left: 10px; top: 10px; font-size: 13px; font-weight: 800; color: #FFE3A8; background: rgba(43,36,32,.85); padding: 6px 10px; border-radius: 10px; }
 .sg-map-chip:empty { display: none; }
 .sg-world-feed { position: relative; z-index: 1; margin-top: -24px; background: var(--sg-bg); border-radius: 22px 22px 0 0; padding: 8px 14px 16px; box-shadow: 0 -8px 24px rgba(0,0,0,.18); min-height: 60vh; }
 .sg-world-feed > * + * { margin-top: 12px; }
 .sg-grab { width: 40px; height: 5px; border-radius: 3px; background: var(--sg-line); margin: 0 auto 4px; }
+/* 地圖保持夠大：寬度 ≥ 1180 才左右並排，否則上下排 */
 @media (min-width: 1024px) {
-  .sg-world { display: grid; grid-template-columns: minmax(0, 1fr) 440px; }
+  body.sg-mapnav .sg-side { display: none; }
+  body.sg-mapnav .sg-main { margin-left: 0; }
+  .sg-world-map { height: 62vh; }
+  .sg-world-feed { max-width: 760px; margin-left: auto; margin-right: auto; }
+}
+@media (min-width: 1180px) {
+  body.sg-mapnav { overflow: hidden; }
+  .sg-world { display: grid; grid-template-columns: minmax(0, 1fr) 420px; }
   .sg-world-map { height: calc(100vh - var(--sg-hd)); }
-  .sg-world-feed { position: sticky; top: var(--sg-hd); height: calc(100vh - var(--sg-hd)); overflow-y: auto; margin-top: 0; border-radius: 0; box-shadow: none; border-left: 1px solid var(--sg-line); }
-  .sg-main-world .sg-appbar { position: absolute; z-index: 3; left: 200px; right: 440px; background: linear-gradient(rgba(0,0,0,.35), transparent); color: #fff; pointer-events: none; }
+  .sg-world-feed { position: sticky; top: var(--sg-hd); height: calc(100vh - var(--sg-hd)); overflow-y: auto; margin: 0; max-width: none; border-radius: 0; box-shadow: none; border-left: 1px solid var(--sg-line); }
+  .sg-main-world .sg-appbar { position: absolute; z-index: 3; left: 0; right: 420px; background: linear-gradient(rgba(0,0,0,.35), transparent); color: #fff; pointer-events: none; }
   .sg-main-world .sg-appbar * { pointer-events: auto; }
   .sg-main-world .sg-appbar .sg-verse, .sg-main-world .sg-appbar .sg-verse b { color: #fff; }
   .sg-main-world .sg-appbar-tools { right: 16px; }
   .sg-main-world { padding-bottom: 0; }
   .sg-map-chip { top: 96px; left: 16px; }
 }
+/* 地圖上的導覽（Islanders 式：底部置中、圓形按鈕） */
+.sg-hud { display: none; }
+@media (min-width: 1024px) {
+  .sg-hud { display: flex; gap: 14px; position: absolute; left: 50%; transform: translateX(-50%); bottom: 40px; z-index: 4; }
+  .sg-hud a { display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; color: #fff; font-size: 12px; font-weight: 800; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
+  .sg-hud .o { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.92); color: #2B2420; box-shadow: 0 4px 14px rgba(0,0,0,.25); transition: transform .15s; }
+  .sg-hud a:hover .o { transform: translateY(-2px); }
+  .sg-hud a[aria-current="page"] .o { background: #007E8A; color: #fff; box-shadow: 0 0 0 3px rgba(255,255,255,.9), 0 4px 14px rgba(0,0,0,.25); }
+  .sg-world-map .sg-demo-tag { bottom: 16px; }
+}
+/* 卷軸：只留一條，細而淡 */
+.sg-world-feed { scrollbar-width: thin; scrollbar-color: rgba(127,127,127,.35) transparent; }
+.sg-world-feed::-webkit-scrollbar { width: 6px; } .sg-world-feed::-webkit-scrollbar-thumb { background: rgba(127,127,127,.35); border-radius: 3px; }
+/* 在 DX 的 App 框裡：拿掉自己的 Header */
+html.sg-embed { --sg-hd: 0px; }
+html.sg-embed .sg-hd { display: none; }
 .sg-armor { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .sg-armor-i { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding: 8px 4px; border-radius: 12px; background: var(--sg-hl); font-size: 12px; }
 .sg-armor-i .b { font-size: 26px; }

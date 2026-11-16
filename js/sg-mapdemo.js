@@ -46,20 +46,50 @@
   // ---------- ① 世界地圖：經緯度投影到 900×640 ----------
   const W = document.getElementById('world'); if (W) {
   const proj = (lon, lat) => [(lon - 11) * 33, (43.2 - lat) * 40 + 40];
-  const poly = (pts, fill, stroke) => el('polygon', { points: pts.map(p => proj(p[0], p[1]).join(',')).join(' '), fill, stroke: stroke || '#C2A86F', 'stroke-width': 2, 'stroke-linejoin': 'round' }, W);
-  el('rect', { x: 0, y: 0, width: 900, height: 640, fill: '#9CCFD8' }, W);
-  for (let i = 0; i < 14; i++) el('path', { d: `M${(i * 97) % 880} ${60 + (i * 53) % 540} q10 -6 20 0 t20 0`, stroke: '#B9E0E6', 'stroke-width': 2, fill: 'none', opacity: .8 }, W);
-  const LAND = '#E9D9B4';
+  // Islanders 配色：無描邊、淺水環、懸崖側面、平面上色
+  const SEA = '#57BFC4', SHALLOW = '#8EDDD3', CLIFF = '#B9A88E';
+  const GRASS = '#A9D46F', DESERT = '#EAD9A0', DRY = '#C9CF7C', PLATEAU = '#E6B35A';
+  const pp = pts => pts.map(p => proj(p[0], p[1]).join(',')).join(' ');
+  const lands = [];
+  const poly = (pts, fill) => lands.push([pts, fill]);
+  el('rect', { x: 0, y: 0, width: 900, height: 640, fill: SEA }, W);
+  for (let i = 0; i < 14; i++) el('path', { d: `M${(i * 97) % 880} ${60 + (i * 53) % 540} q10 -6 20 0 t20 0`, stroke: '#7FD0D2', 'stroke-width': 2, fill: 'none', opacity: .8 }, W);
+  const LAND = GRASS;
   poly([[11, 44], [38, 44], [38, 41.2], [36, 41.6], [34, 42], [31, 41.1], [29, 41.2], [27, 41.2], [26, 40.9], [24, 41.2], [22, 42.2], [20, 41.8], [19.4, 41.8], [18, 42.6], [16, 42.6], [15, 42.2], [12, 42.4], [11, 42.6]], LAND);
   poly([[12, 42.4], [15, 42.2], [16, 41.4], [17.2, 40.5], [18.5, 40.1], [16.6, 39.0], [16.0, 38.0], [15.6, 38.0], [15.9, 39.3], [15.0, 40.2], [14.0, 40.8], [12.5, 41.4], [11, 42.3], [11, 42.6]], LAND);
   poly([[12.4, 38.1], [15.6, 38.3], [15.1, 36.7], [12.6, 37.6]], LAND);
   poly([[19.4, 41.8], [20, 41.8], [22, 42.2], [24, 41.2], [26, 40.9], [26.1, 40.3], [24.5, 40.2], [23.7, 40.2], [22.9, 40.6], [22.6, 40.0], [23.3, 39.2], [22.9, 38.6], [24, 38.2], [23.2, 37.9], [22.9, 37.5], [23.2, 36.4], [22.5, 36.4], [21.7, 36.8], [21.1, 37.8], [21.3, 38.4], [20.7, 38.9], [20, 39.7], [19.4, 40.4]], LAND);
   poly([[26.0, 40.3], [27, 41.2], [29, 41.2], [31, 41.1], [34, 42], [36, 41.6], [38, 41.2], [38, 36.5], [36.2, 36.6], [36, 36.2], [35, 36.6], [34, 36.3], [32.8, 36.1], [31.5, 36.7], [30.6, 36.8], [29.7, 36.2], [28.2, 36.7], [27.3, 37.2], [27.2, 37.9], [26.4, 38.4], [26.8, 39.0], [26.1, 39.5]], LAND);
-  poly([[36, 36.2], [38, 36.5], [38, 29.5], [34.9, 29.5], [34.2, 31.2], [34.5, 31.6], [34.9, 32.4], [35.1, 33.1], [35.5, 33.9], [35.9, 34.7], [35.9, 35.4]], LAND);
-  poly([[11, 33.6], [15.2, 32.4], [19.6, 32.0], [20, 30.5], [25, 31.6], [29, 30.9], [32.3, 31.3], [34.2, 31.2], [34.9, 29.5], [11, 29.5]], LAND);
+  poly([[36, 36.2], [38, 36.5], [38, 29.5], [34.9, 29.5], [34.2, 31.2], [34.5, 31.6], [34.9, 32.4], [35.1, 33.1], [35.5, 33.9], [35.9, 34.7], [35.9, 35.4]], DRY);
+  poly([[11, 33.6], [15.2, 32.4], [19.6, 32.0], [20, 30.5], [25, 31.6], [29, 30.9], [32.3, 31.3], [34.2, 31.2], [34.9, 29.5], [11, 29.5]], DESERT);
   poly([[23.5, 35.6], [26.3, 35.3], [26.2, 35.0], [23.6, 35.2]], LAND);
   poly([[32.3, 35.1], [34.6, 35.7], [33.9, 35.1], [32.6, 34.7]], LAND);
-  const mt = proj(14.4, 35.9); el('circle', { cx: mt[0], cy: mt[1], r: 5, fill: LAND, stroke: '#C2A86F', 'stroke-width': 2 }, W);
+  const mt = proj(14.4, 35.9); el('circle', { cx: mt[0], cy: mt[1], r: 5, fill: LAND }, W);
+  // 依序畫：淺水環 → 懸崖 → 地表
+  lands.forEach(([pts]) => el('polygon', { points: pp(pts), fill: SHALLOW, stroke: SHALLOW, 'stroke-width': 16, 'stroke-linejoin': 'round' }, W));
+  lands.forEach(([pts]) => el('polygon', { points: pp(pts), fill: CLIFF, transform: 'translate(0,7)' }, W));
+  lands.forEach(([pts, fill]) => el('polygon', { points: pp(pts), fill }, W));
+  // 高原（安納托利亞、猶大山地）
+  const patch = (pts, fill) => el('polygon', { points: pp(pts), fill }, W);
+  patch([[30.2, 39.6], [33.5, 40.2], [36.8, 39.6], [37.6, 38.4], [35.2, 37.9], [32.0, 38.0], [30.4, 38.4]], PLATEAU);
+  patch([[34.95, 32.7], [35.35, 32.7], [35.4, 31.4], [35.2, 31.0], [34.9, 31.3]], PLATEAU);
+  // 河流、湖（約旦河、奧倫提斯河、尼羅河三角洲、米安得河、台伯河）
+  const river = pts => el('polyline', { points: pp(pts), fill: 'none', stroke: '#5FC3D3', 'stroke-width': 3, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, W);
+  river([[35.65, 33.25], [35.6, 32.85], [35.57, 32.7], [35.55, 32.2], [35.5, 31.85], [35.5, 31.75]]);
+  river([[36.3, 34.4], [36.55, 35.3], [36.5, 36.0], [36.15, 36.2], [35.95, 36.05]]);
+  river([[31.25, 29.6], [31.15, 30.3], [30.4, 31.45]]); river([[31.15, 30.3], [31.8, 31.45]]);
+  river([[29.4, 37.9], [28.3, 37.9], [27.3, 37.55]]); river([[12.6, 42.5], [12.45, 41.95], [12.25, 41.75]]);
+  [[35.58, 32.82, 4, 6], [35.5, 31.5, 4, 12]].forEach(([lo, la, rx, ry]) => { const [x, y] = proj(lo, la); el('ellipse', { cx: x, cy: y, rx, ry, fill: '#5FC3D3' }, W); });
+  // 低多邊形山（兩面明暗＋雪頂）
+  const mtn = (lo, la, s) => { const [x, y] = proj(lo, la);
+    el('polygon', { points: `${x - s},${y} ${x},${y - s * 1.3} ${x},${y}`, fill: '#9A9088' }, W);
+    el('polygon', { points: `${x},${y} ${x},${y - s * 1.3} ${x + s},${y}`, fill: '#756C64' }, W);
+    if (s >= 11) el('polygon', { points: `${x - s * .3},${y - s * .9} ${x},${y - s * 1.3} ${x + s * .3},${y - s * .9} ${x},${y - s * .8}`, fill: '#fff' }, W); };
+  // 托魯斯山脈、黎巴嫩山、黑門山、特羅多斯（居比路）、奧林帕斯、品都斯、亞平寧、羅多彼、西奈山、猶大山地
+  [[30.3, 37.3, 10], [31.2, 37.2, 12], [32.2, 37.1, 13], [33.2, 37.05, 12], [34.2, 37.2, 13], [35.2, 37.5, 12], [36.3, 37.7, 11],
+   [36.0, 34.1, 10], [36.2, 34.6, 9], [35.85, 33.4, 11], [32.9, 34.95, 8], [22.35, 40.1, 13], [21.2, 39.6, 10], [21.4, 40.3, 9],
+   [13.4, 42.3, 10], [14.6, 41.4, 9], [16.1, 39.6, 9], [24.5, 41.6, 10], [26.2, 41.9, 8], [33.97, 28.9, 12], [29.6, 37.5, 8], [28.6, 38.6, 8],
+   [35.3, 32.25, 6], [35.05, 31.6, 6]].forEach(m => mtn(...m));
   const cloud = el('g', { class: 'cloud', opacity: .7 }, W);
   [[640, 470], [760, 240]].forEach(([x, y]) => { el('ellipse', { cx: x, cy: y, rx: 40, ry: 13, fill: '#fff' }, cloud); el('ellipse', { cx: x + 22, cy: y - 8, rx: 24, ry: 12, fill: '#fff' }, cloud); });
 
@@ -104,17 +134,24 @@
   { const [x, y] = proj(...C['耶路撒冷']); const g = el('g', {}, W); const P = iso(x, y - 4, 7);
     block(g, P, -1, -1, 2, 2, 16, PAL.gold); roof(g, P, -1, -1, 2, 2, 16, 6, PAL.gold); label(g, x - 50, y - 6, '耶路撒冷', '出發'); }
   { const [x, y] = proj(...C['別加']); label(W, x - 20, y - 36, '別加 🔒', '下一站'); }
+  // 依畫面比例取景（地圖不會被擠扁，也不會露出邊界）
+  const fit = () => { const r = W.getBoundingClientRect(); if (!r.width || !r.height) return; const ar = r.width / r.height;
+    let vh = 500, vw = vh * ar; if (vw > 860) { vw = 860; vh = vw / ar; } if (vh > 620) { vh = 620; vw = vh * ar; }
+    const cl = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+    W.setAttribute('viewBox', `${cl(690 - vw / 2, 0, 870 - vw)} ${cl(330 - vh / 2, 10, 640 - vh)} ${vw} ${vh}`); };
+  fit(); addEventListener('resize', fit);
 
   }
   // ---------- ② 我的領地：等角格子 ----------
   const L = document.getElementById('land'); if (L) {
-  el('rect', { x: 0, y: 0, width: 900, height: 900, fill: '#BFE3C9' }, L);
+  el('rect', { x: 0, y: 0, width: 900, height: 900, fill: '#57BFC4' }, L);
   const T = 46, P = iso(450, 170, T);
+  block(L, iso(450, 188, T), 0, 0, 9, 9, 18, ['#A9D46F', '#C9B898', '#A99A84']);   // 島的懸崖側面
   // 地面格子
   for (let gx = 0; gx < 9; gx++) for (let gy = 0; gy < 9; gy++) {
     const a = P(gx, gy), b = P(gx + 1, gy), c = P(gx + 1, gy + 1), d = P(gx, gy + 1);
     const river = gy === 7 && gx > 1;
-    el('polygon', { points: [a, b, c, d].map(p => p.join(',')).join(' '), fill: river ? '#8FC9E0' : ((gx + gy) % 2 ? '#A6DB9A' : '#9BD38F'), stroke: river ? '#7BB7CF' : '#8CC882', 'stroke-width': 1 }, L);
+    el('polygon', { points: [a, b, c, d].map(p => p.join(',')).join(' '), fill: river ? '#5FC3D3' : ((gx + gy) % 2 ? '#B0D877' : '#A3CF68'), stroke: river ? '#5FC3D3' : '#9CC862', 'stroke-width': 1 }, L);
   }
   const G = el('g', {}, L);
   // 西奈山（後方）
