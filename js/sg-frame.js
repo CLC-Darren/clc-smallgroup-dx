@@ -138,7 +138,7 @@
     let box = document.getElementById('homeDash');
     if (!box) { box = document.createElement('section'); box.id = 'homeDash'; box.className = 'sg-dash'; box0.append(box); }
     box.innerHTML = tile('☀️', '今日任務', `${n} / ${D.tasks.length}`, 'data-pop="today"') + tile('📅', '活動', `近期 ${events().length} 個`, 'data-pop="events"')
-      + tile('🚩', '小組', '代禱、QT、見證', 'href="fellowship.html"')
+      + tile('🚩', '小組', '代禱、見證', 'href="fellowship.html"')
       + (lead ? tile('👥', '組員名單', '點名、新朋友', 'href="members.html"') + tile('🐑', '牧養管理', '基金、年度大總表…', 'href="care.html"') : '')
       + tile('🙂', '我', '個人資料、收藏', 'href="me.html"');
   }
