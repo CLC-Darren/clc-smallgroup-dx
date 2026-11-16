@@ -308,7 +308,7 @@ button.sg-chip { cursor: pointer; }
 .sg-rail, .sg-taskcol { display: flex; flex-direction: column; gap: 8px; }
 .sg-rail { position: fixed; z-index: 60; left: 6px; top: calc(var(--sg-hd) + 58px); }
 .sg-mapnav .sg-rail { position: absolute; z-index: 5; top: 52px; left: 8px; }
-.sg-taskcol { position: absolute; z-index: 5; right: 8px; top: 10px; }
+.sg-taskcol { position: absolute; z-index: 5; right: 8px; bottom: 12px; }   /* 右下、在「我的領地」切換鈕上方 */
 .sg-rb { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; width: 46px; padding: 0; border: 0; background: none; text-decoration: none; color: var(--sg-text); font-size: 10px; font-weight: 800; cursor: pointer; font-family: inherit; }
 .sg-mapnav .sg-rb { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
 .sg-rb .o { position: relative; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.94); color: #2B2420; box-shadow: 0 3px 10px rgba(0,0,0,.22); font-size: 17px; text-shadow: none; }
@@ -357,7 +357,7 @@ body.sg-mapnav { overflow: hidden; }
   .sg-status { padding-left: 78px; }
   .sg-rail { left: 14px; }
   .sg-mapnav .sg-rail { left: 14px; top: 64px; }
-  .sg-taskcol { right: 14px; top: 14px; }
+  .sg-taskcol { right: 22px; bottom: 112px; }
   .sg-mapnav .sg-status { left: 14px; top: 14px; }
   .sg-rb .o { width: 40px; height: 40px; }
   .sg-bottom { left: 14px; right: 14px; bottom: 14px; padding: 0; background: none; border: 0; backdrop-filter: none; -webkit-backdrop-filter: none; pointer-events: none; justify-content: space-between; align-items: flex-end; }
@@ -434,3 +434,8 @@ html.dark[data-dk="c"] { --sg-bg: #14272B; --sg-card: #1D3338; --sg-soft: #25404
 .roll-td, .roll-th { text-align: center; padding-left: 8px !important; padding-right: 0 !important; }
 .m-card > .roll-chk { flex: 0 0 34px; width: 34px; padding: 0; border: 2px solid #C7C7CC; border-radius: 10px; background: #fff; color: transparent; justify-content: center; }
 .m-card > .roll-chk[aria-pressed="true"] { background: #007E8A; border-color: #007E8A; color: #fff; }
+/* 組員名單：新朋友 */
+.sg-nf-chip { height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(46,160,67,.35); background: rgba(46,160,67,.12); color: #1B6B34; font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit; }
+html.dark .sg-nf-chip { color: #7EE29B; }
+.sg-nf-in { display: inline-flex; align-items: center; gap: 8px; padding: 4px 4px 4px 12px; border-radius: 999px; background: var(--sg-soft); font-size: 14px; }
+.sg-nf-in .sg-btn { min-height: 30px; padding: 0 12px; border-radius: 999px; font-size: 13px; }

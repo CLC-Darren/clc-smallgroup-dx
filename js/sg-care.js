@@ -1,8 +1,7 @@
-/* 漢威牧區｜牧養管理（小組長以上）：組員名單（連到 members.html，每週點名在那裡）、新朋友、小組基金、安德烈探訪、會議記錄、活動行事曆、牧養手冊、年度大總表 */
+/* 漢威牧區｜牧養管理（小組長以上）：組員名單（連到 members.html：每週點名、新朋友都在那裡）、小組基金、年度大總表、會議記錄、牧養手冊 */
 (async function () {
   const U = window.SGU, esc = U.esc, $ = U.$, me = U.session;
-  const SECS = [['intake', '🌱 新朋友'], ['fund', '💰 小組基金'], ['visit', '🚶 安德烈探訪'], ['annual', '📊 年度大總表'],
-    ['meet', '🗒️ 會議記錄'], ['event', '📅 活動行事曆'], ['book', '📖 牧養手冊']];
+  const SECS = [['fund', '💰 小組基金'], ['annual', '📊 年度大總表'], ['meet', '🗒️ 會議記錄'], ['book', '📖 牧養手冊']];   // 新朋友→組員名單、活動→地圖右下「活動」、安德烈探訪先拿掉
   let D = {};
   async function load() {
     const [groups, persons, lists, app] = await Promise.all([U.all('groups'), U.all('persons'), U.one('options', 'lists'), U.one('options', 'app')]);
@@ -15,7 +14,7 @@
   await load();
   const active = () => D.groups.filter(g => g.active !== false);
   const myGroups = () => U.isDistrict() ? active() : active().filter(g => g.id === D.me.groupId);
-  let cur = { sec: 'intake', gid: (myGroups()[0] || {}).id, date: '' };
+  let cur = { sec: 'fund', gid: (myGroups()[0] || {}).id, date: '' };
   const h = location.hash.slice(1).split(':');
   if (h[0] === 'roll') { location.replace('members.html#' + location.hash.slice(1)); return; }   // 每週點名已併進組員名單
   if (SECS.some(s => s[0] === h[0])) { cur.sec = h[0]; if (h[1]) cur.gid = h[1]; if (h[2]) cur.date = h[2]; }
@@ -29,21 +28,9 @@
 
   async function render() {
     if (cur.sec !== 'annual' && (cur.gid === 'district' || !D.gmap[cur.gid] || D.gmap[cur.gid].active === false) ) cur.gid = (myGroups()[0] || {}).id;
-    const fn = { intake, fund, visit, annual, meet, event, book }[cur.sec];
+    const fn = { fund, annual, meet, book }[cur.sec];
     $('sec').innerHTML = '<div class="sg-empty">讀取中…</div>';
     await fn();
-  }
-
-  // ================= 新朋友 =================
-  async function intake() {
-    const list = (await U.all('intakes')).sort((a, b) => U.ms(b.createdAt) - U.ms(a.createdAt));
-    const url = new URL('join.html', location.href).href;
-    $('sec').innerHTML = title('新朋友', '照 SR 的新朋友名單與登記表。之後全教會版本完成，改從教會那邊抓。') + `
-      <section class="sg-card"><a class="sg-item" href="intakes.html"><span class="sg-ic">🌱</span><span class="sg-txt">新朋友名單<small>跟進、改狀態、加入名冊</small></span><span class="sg-badge">${list.length} 位</span></a>
-        <a class="sg-item" href="join.html" target="_blank"><span class="sg-ic">📝</span><span class="sg-txt">新朋友登記表<small>給新朋友自己填，不用登入</small></span><span class="sg-badge">開啟 ↗</span></a>
-        <div class="sg-item"><span class="sg-ic">🔗</span><span class="sg-txt">登記表網址<small style="word-break:break-all">${esc(url)}</small></span><button type="button" class="sg-btn" id="copyJoin">複製</button></div></section>
-      <section class="sg-card" style="margin-top:12px"><div class="sg-card-h">最近登記</div>${list.slice(0, 6).map(p => `<a class="sg-item" href="intakes.html"><span class="sg-ic">👋</span><span class="sg-txt">${esc(p.name)}<small>${U.md(new Date(U.ms(p.createdAt)).toISOString())}・${esc(p.groupName || '未選小組')}</small></span>${p.personId ? '<span class="sg-pill">已加入名冊</span>' : `<span class="sg-badge">${esc(p.status || '未處理')}</span>`}</a>`).join('') || '<div class="sg-empty">還沒有新朋友登記</div>'}</section>`;
-    $('copyJoin').addEventListener('click', () => navigator.clipboard.writeText(url).then(() => U.toast('已複製登記表網址')));
   }
 
   // ================= 小組基金（只記收支） =================
@@ -72,21 +59,6 @@
       U.toast('已新增'); fund();
     });
     $('sec').querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => { if (!confirm('刪除這一筆？')) return; await db.collection('funds').doc(b.dataset.del).delete(); fund(); }));
-  }
-
-  // ================= 安德烈探訪：每年次數 =================
-  async function visit() {
-    const vs = await U.all('visits'), y = new Date().getFullYear();
-    const years = [y, y - 1];
-    const get = (gid, yr) => (vs.find(v => v.groupId === gid && +v.year === yr) || {}).count || 0;
-    $('sec').innerHTML = title('安德烈探訪', '每年告訴區長去了幾次就好（含福音佈道）。') + `
-      <section class="sg-card"><div class="sg-scroll-x"><table class="sg-table"><thead><tr><th>小組</th>${years.map(yr => `<th class="num">${yr}</th>`).join('')}</tr></thead><tbody>
-      ${myGroups().map(g => `<tr><td><b>${esc(g.name)}</b></td>${years.map(yr => `<td class="num">${yr === y ? `<span style="display:inline-flex;align-items:center;gap:6px"><button type="button" class="sg-btn" data-v="${g.id}" data-d="-1" style="min-height:30px;padding:0 10px">−</button><b style="min-width:24px;display:inline-block;text-align:center">${get(g.id, yr)}</b><button type="button" class="sg-btn" data-v="${g.id}" data-d="1" style="min-height:30px;padding:0 10px">＋</button></span>` : get(g.id, yr)}</td>`).join('')}</tr>`).join('')}
-      </tbody></table></div></section><p class="sg-note" style="margin-top:8px">今年的次數會自動帶進年度大總表。</p>`;
-    $('sec').querySelectorAll('[data-v]').forEach(b => b.addEventListener('click', async () => {
-      const id = b.dataset.v + '_' + y; const n = Math.max(0, get(b.dataset.v, y) + +b.dataset.d);
-      await db.collection('visits').doc(id).set({ groupId: b.dataset.v, year: y, count: n }); visit();
-    }));
   }
 
   // ================= 年度大總表 =================
@@ -177,34 +149,6 @@
     };
     if ($('mAdd')) $('mAdd').addEventListener('click', () => form(null));
     $('sec').querySelectorAll('[data-medit]').forEach(b => b.addEventListener('click', () => form(list.find(x => x.id === b.dataset.medit))));
-  }
-
-  // ================= 活動行事曆 =================
-  async function event() {
-    const list = (await U.all('events')).filter(e => e.scope !== 'group' || U.isDistrict() || e.groupId === D.me.groupId).sort((a, b) => a.date.localeCompare(b.date));
-    const up = list.filter(e => e.date >= U.today()), past = list.filter(e => e.date < U.today()).reverse().slice(0, 5);
-    const SC = { church: '全教會', district: '牧區', group: '小組' };
-    const row = e => `<div class="sg-item"><span class="sg-ic" style="font-size:12px;font-weight:800">${U.md(e.date)}</span><span class="sg-txt">${esc(e.title)}<small>${U.mdw(e.date)}・${esc(e.place || '')}</small></span><span class="sg-badge">${SC[e.scope] || ''}${e.scope === 'group' ? '・' + esc((D.gmap[e.groupId] || {}).name || '') : ''}</span>
-      ${U.isDistrict() || (e.scope === 'group' && e.groupId === D.me.groupId) ? `<button type="button" class="sg-btn" data-edel="${e.id}" style="min-height:32px;padding:0 10px" aria-label="刪除">🗑</button>` : ''}</div>`;
-    $('sec').innerHTML = title('活動行事曆', '每個人的首頁都會看到近期活動') + `<button type="button" class="sg-btn sg-btn-teal" id="eAdd" style="margin-bottom:12px">＋ 新增活動</button>
-      <section class="sg-card"><div class="sg-card-h">接下來</div>${up.map(row).join('') || '<div class="sg-empty">沒有活動</div>'}</section>
-      <section class="sg-card" style="margin-top:12px"><div class="sg-card-h">已結束</div>${past.map(row).join('') || '<div class="sg-empty">—</div>'}</section>`;
-    $('eAdd').addEventListener('click', () => {
-      const dlg = U.sheet(`<h3>新增活動</h3><label class="sg-lab">活動名稱</label><input class="sg-in" id="eT" maxlength="40">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><label class="sg-lab">日期</label><input class="sg-in" type="date" id="eD" value="${U.today()}"></div><div><label class="sg-lab">地點</label><input class="sg-in" id="eP"></div></div>
-        <label class="sg-lab">範圍</label><select class="sg-in" id="eS">${U.isDistrict() ? '<option value="district">牧區</option><option value="church">全教會</option>' : ''}<option value="group">${esc((D.gmap[D.me.groupId] || {}).name || '小組')}</option></select>
-        <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:14px"><input type="checkbox" id="ePost" checked> 同時發一則動態</label>
-        <div style="display:flex;gap:8px;margin-top:12px"><button type="button" class="sg-btn" data-dlg-close style="flex:1">取消</button><button type="button" class="sg-btn sg-btn-teal" id="eOk" style="flex:2">新增</button></div>`);
-      dlg.querySelector('#eOk').addEventListener('click', async () => {
-        const t = dlg.querySelector('#eT').value.trim(); if (!t) { U.toast('請填活動名稱', 'error'); return; }
-        const scope = dlg.querySelector('#eS').value;
-        const ref = await db.collection('events').add({ title: t, date: dlg.querySelector('#eD').value, place: dlg.querySelector('#eP').value, scope, groupId: scope === 'group' ? D.me.groupId : '', by: me.personId });
-        if (dlg.querySelector('#ePost').checked) await db.collection('posts').add({ type: 'event', event: ref.id, author: me.personId, groupId: scope === 'group' ? D.me.groupId : '', scope: scope === 'group' ? 'group' : 'district',
-          text: `新活動：${t}`, reactions: { amen: [], heart: [] }, prayedBy: [], comments: [], createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-        dlg.close(); event();
-      });
-    });
-    $('sec').querySelectorAll('[data-edel]').forEach(b => b.addEventListener('click', async () => { if (confirm('刪除這個活動？')) { await db.collection('events').doc(b.dataset.edel).delete(); event(); } }));
   }
 
   // ================= 牧養手冊 =================

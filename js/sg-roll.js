@@ -1,4 +1,7 @@
-/* 漢威牧區｜每週點名（併在組員名單裡）
+/* 漢威牧區｜組員名單的附加功能：新朋友提醒（最上面）＋每週點名
+ * 新朋友：登記表（join.html）送來的資料先進 intakes（沒登入的人只能寫這裡，個資名單不開放外人寫入），
+ *   這裡按「加入名單」就變成組員（狀態「新加入」）；之後的狀況寫在個人資料的備註。狀態「新加入」的人列在「需要關懷」。
+ * 每週點名（併在組員名單裡）
  * 不改組員名單本身（sg-roster.js）：名單畫好之後，在每個名字前面加一格打勾，名單上方加一條點名列
  *（日期、這週是、訪客人數、儲存）。資料格式與原本牧養的點名相同：attendance/{小組id_日期}。
  * 網址 members.html#roll:小組id:日期 → 直接切到那個小組、那一天。 */
@@ -6,7 +9,8 @@
   const U = window.SGU, esc = U.esc, me = U.session;
   if (!U || !me || document.body.dataset.mode !== 'members') return;
   const SPECIAL = ['', '聯合主日', '特會', '安息月', '其他'];
-  const [groups, persons, mine] = await Promise.all([U.all('groups'), U.all('persons'), U.one('persons', me.personId)]);
+  const [groups, mine] = await Promise.all([U.all('groups'), U.one('persons', me.personId)]);
+  let persons = await U.all('persons');
   const gmap = Object.fromEntries(groups.map(g => [g.id, g]));
   const myGroups = groups.filter(g => g.active !== false && (U.isDistrict() || g.id === (mine || {}).groupId));
   let st = { gid: '', date: '', present: new Set(), special: '', guests: 0, rec: null, dirty: false, recs: [] };
@@ -16,6 +20,37 @@
   bar.className = 'sg-rollbar'; bar.id = 'rollBar';
   const anchor = document.getElementById('deskWrap');
   anchor.parentNode.insertBefore(bar, anchor);
+  const nf = document.createElement('section');
+  nf.className = 'sg-rollbar sg-newbar'; nf.id = 'newBar';
+  anchor.parentNode.insertBefore(nf, bar);
+  const inScope = gid => U.isDistrict() ? true : myGroups.some(g => g.id === gid);
+
+  // ---------- 新朋友 ----------
+  async function newFriends() {
+    const intakes = (await U.all('intakes')).filter(x => !x.personId && (inScope(x.groupId) || (U.isDistrict() && !x.groupId)));
+    const care = persons.filter(p => p.status === '新加入' && inScope(p.groupId));
+    nf.innerHTML = `<div class="sg-roll-row"><div class="sg-roll-h">🌱 新朋友</div>
+        ${care.length ? `<span class="sg-note">需要關懷：</span>${care.map(p => `<button type="button" class="sg-nf-chip" data-nf-find="${esc(p.name)}">${esc(p.name)}</button>`).join('')}` : '<span class="sg-note">目前沒有需要關懷的新朋友</span>'}</div>
+      ${intakes.length ? `<div class="sg-roll-row"><span class="sg-note">登記表新送來 ${intakes.length} 位：</span>${intakes.map(x => `<span class="sg-nf-in"><b>${esc(x.name)}</b>${x.groupId && gmap[x.groupId] ? `・${esc(gmap[x.groupId].name)}` : ''}<button type="button" class="sg-btn sg-btn-teal" data-nf-join="${esc(x.id)}">加入名單</button></span>`).join('')}</div>` : ''}
+      <p class="sg-note" style="margin:0">狀態是「新加入」的人會列在這裡；有什麼狀況寫在他的個人資料「備註」。</p>`;
+    nf.dataset.n = intakes.length;
+    nf._intakes = intakes;
+  }
+  nf.addEventListener('click', async e => {
+    const f = e.target.closest('[data-nf-find]');
+    if (f) { const s = document.querySelector('[data-filter="status"]'); if (s && [...s.options].some(o => o.value === '新加入')) { s.value = '新加入'; s.dispatchEvent(new Event('change', { bubbles: true })); } return; }
+    const j = e.target.closest('[data-nf-join]'); if (!j) return;
+    const x = nf._intakes.find(i => i.id === j.dataset.nfJoin); if (!x || !confirm(`把「${x.name}」加入組員名單？`)) return;
+    const arr = v => Array.isArray(v) ? v.join('、') : (v || '');
+    const note = ['新朋友登記表', x.refName ? `介紹人：${x.refName}${x.refRelation ? `（${x.refRelation}）` : ''}` : '', arr(x.faith) ? `信仰：${arr(x.faith)}` : '', arr(x.intent) ? `希望：${arr(x.intent)}` : '', x.note ? `代禱：${x.note}` : ''].filter(Boolean).join('\n');
+    const gid = x.groupId || (myGroups.length === 1 ? myGroups[0].id : '');
+    const ref = await db.collection('persons').add({ name: x.name, gender: x.gender || '', birthday: x.birthday || '', mobile: x.mobile || '', phone: x.phone || '', address: x.address || '',
+      groupId: gid, status: '新加入', note, source: 'intake', ...(x.photoThumb ? { photoThumb: x.photoThumb } : {}), createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    await db.collection('intakes').doc(x.id).update({ personId: ref.id, joinedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    U.toast(`已把 ${x.name} 加入組員名單`);
+    persons = await U.all('persons'); newFriends(); if (st.gid === gid) load(st.gid, st.date);
+  });
+  newFriends();
   const groupSel = () => document.querySelector('[data-filter="group"]');
   const people = () => persons.filter(p => p.groupId === st.gid && p.status !== '已離開');
 

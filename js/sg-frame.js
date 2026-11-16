@@ -14,13 +14,11 @@
     const fire = U.groupQt(D.daily, D.persons, U.isDistrict() ? '' : D.me.groupId, U.today().slice(0, 7));
     const md = U.today().slice(5), month = new Date().getMonth() + 1;
     const stars = bdays(), todayStar = stars.some(p => p.birthday.slice(5) === md);
-    const evs = events();
     document.querySelectorAll('.sg-st-av').forEach(e => { e.innerHTML = U.avatar(D.me, 34); });
     const meAv = $('sgMeAv'); if (meAv) meAv.innerHTML = U.avatar(D.me, 44);
     $('sgStatus').innerHTML = `<span class="sg-st-name">${esc(first(D.me.name))}</span>
       <span class="sg-chip" title="連續天數">🔥 ${st}</span><span class="sg-chip" title="聖經 66 卷讀完幾卷">📖 ${read}/66</span><span class="sg-chip" title="小組營地柴火（本月全組 QT 次數）">🪵 ${fire}</span>
-      <button type="button" class="sg-chip sg-ev${todayStar ? ' hot' : ''}" data-pop="bday" title="${month} 月壽星">🎂 ${stars.length}</button>
-      <button type="button" class="sg-chip sg-ev" data-pop="events" title="近期活動">📅 ${evs.length}</button>`;
+      <button type="button" class="sg-chip sg-ev${todayStar ? ' hot' : ''}" data-pop="bday" title="${month} 月壽星">🎂 ${stars.length}</button>`;
   }
   function bdays() {
     const month = new Date().getMonth() + 1;
@@ -35,7 +33,7 @@
     const day = (D.myDaily.days || {})[U.today()] || {}, n = D.tasks.filter(t => day[t.id]).length, done = U.dayDone(day, D.tasks);
     const btn = (k, ic, label, badge, dot) => `<button type="button" class="sg-rb" data-pop="${k}"><span class="o">${ic}${dot ? '<i class="dot"></i>' : ''}</span><span class="t">${label}</span>${badge ? `<span class="b">${badge}</span>` : ''}</button>`;
     box.innerHTML = btn('today', '☀️', '今日任務', D.tasks.length ? (done ? '✓' : `${n}/${D.tasks.length}`) : '', !done && D.tasks.length)
-      + btn('group', '🏕️', '小組任務', '', false) + btn('district', '🏛️', '牧區任務', '', false);
+      + btn('group', '🏕️', '小組任務', '', false) + btn('district', '🏛️', '牧區任務', '', false) + btn('events', '📅', '活動', events().length || '', false);
   }
 
   // ---------- 彈出視窗 ----------
@@ -81,9 +79,21 @@
       const md = U.today().slice(5), stars = bdays();
       return head(`🎂 ${new Date().getMonth() + 1} 月壽星`, `<span class="sg-note">${stars.length} 位</span>`) + (stars.length ? `<div class="sg-bday">${stars.map(p => `<button type="button" class="${p.birthday.slice(5) === md ? 'today' : ''}" data-bday="${p.id}"><span class="ring">${U.avatar(p, 52)}</span>${esc(first(p.name))}<small>${p.birthday.slice(5) === md ? '今天！' : U.md(p.birthday)}</small></button>`).join('')}</div>` : '<div class="sg-empty">這個月沒有壽星</div>');
     },
-    events() {
-      const evs = events();
-      return head('📅 近期活動') + (evs.length ? evs.map(e => `<div class="sg-item" style="padding-left:0"><span class="sg-ic" style="font-size:13px;font-weight:800">${U.md(e.date)}</span><span class="sg-txt">${esc(e.title)}<small>${U.mdw(e.date)}・${esc(e.place || '')}</small></span></div>`).join('') : '<div class="sg-empty">近期沒有活動</div>');
+    events() {   // 活動：每個人看得到；小組長可以新增自己小組的活動，區長可以新增牧區、全教會的活動
+      const SC = { church: '全教會', district: '牧區', group: '小組' };
+      const all = D.events.filter(e => e.scope !== 'group' || U.isDistrict() || e.groupId === D.me.groupId).sort((a, b) => a.date.localeCompare(b.date));
+      const up = all.filter(e => e.date >= U.today()), past = all.filter(e => e.date < U.today()).reverse().slice(0, 3);
+      const canDel = e => U.isDistrict() || (U.session.role === 'leader' && e.scope === 'group' && e.groupId === D.me.groupId);
+      const row = e => `<div class="sg-item" style="padding-left:0"><span class="sg-ic" style="font-size:13px;font-weight:800">${U.md(e.date)}</span><span class="sg-txt">${esc(e.title)}<small>${U.mdw(e.date)}・${esc(e.place || '')}</small></span><span class="sg-badge">${SC[e.scope] || ''}</span>${canDel(e) ? `<button type="button" class="sg-btn" data-edel="${esc(e.id)}" style="min-height:32px;padding:0 10px" aria-label="刪除">🗑</button>` : ''}</div>`;
+      const lead = U.session.role !== 'member';
+      return head('📅 活動') + (up.map(row).join('') || '<div class="sg-empty">近期沒有活動</div>')
+        + (lead ? `<details style="margin-top:12px"><summary class="sg-btn sg-btn-teal" style="display:inline-flex;list-style:none;cursor:pointer">＋ 新增活動</summary>
+          <label class="sg-lab">活動名稱</label><input class="sg-in" id="eT" maxlength="40">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><label class="sg-lab">日期</label><input class="sg-in" type="date" id="eD" value="${U.today()}"></div><div><label class="sg-lab">地點</label><input class="sg-in" id="eP"></div></div>
+          <label class="sg-lab">範圍</label><select class="sg-in" id="eS">${D.myGroup ? `<option value="group">${esc(D.myGroup.name)}</option>` : ''}${U.isDistrict() ? '<option value="district">牧區</option><option value="church">全教會</option>' : ''}</select>
+          <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:14px"><input type="checkbox" id="ePost" checked> 同時發一則動態</label>
+          <button type="button" class="sg-btn sg-btn-teal" id="eOk" style="width:100%;margin-top:10px">新增</button></details>` : '')
+        + (past.length ? `<div class="sg-lab" style="margin-top:14px">已結束</div>${past.map(row).join('')}` : '');
     }
   };
   let dlg = null, cur = '';
@@ -92,6 +102,16 @@
     const p = e.target.closest('[data-pop]'); if (p) { openPop(p.dataset.pop); return; }
     const t = e.target.closest('.sg-dialog [data-task]');
     if (t) { const drawn = await F.setTask(t.dataset.task, t.getAttribute('aria-pressed') !== 'true'); D = await F.load(); status(); taskcol(); openPop(cur); if (drawn) F.showCard(drawn); return; }
+    if (e.target.closest('.sg-dialog #eOk')) {
+      const q = s => dlg.querySelector(s), t = q('#eT').value.trim(); if (!t) { U.toast('請填活動名稱', 'error'); return; }
+      const scope = q('#eS').value, gid = scope === 'group' ? D.me.groupId : '';
+      const ref = await db.collection('events').add({ title: t, date: q('#eD').value, place: q('#eP').value, scope, groupId: gid, by: U.session.personId });
+      if (q('#ePost').checked) await db.collection('posts').add({ type: 'event', event: ref.id, author: U.session.personId, groupId: gid, scope: scope === 'group' ? 'group' : 'district',
+        text: `新活動：${t}`, reactions: { amen: [], heart: [] }, prayedBy: [], comments: [], createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+      D = await F.load(); taskcol(); openPop('events'); U.toast('已新增活動'); return;
+    }
+    const del = e.target.closest('.sg-dialog [data-edel]');
+    if (del) { if (confirm('刪除這個活動？')) { await db.collection('events').doc(del.dataset.edel).delete(); D = await F.load(); taskcol(); openPop('events'); } return; }
     const b = e.target.closest('.sg-dialog [data-bday]');
     if (b) {
       const post = document.querySelector(`[data-post="bday_${b.dataset.bday}_${U.today()}"]`);
