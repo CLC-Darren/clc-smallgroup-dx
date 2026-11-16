@@ -143,6 +143,26 @@
   $('suKey').addEventListener('click', () => SGU.toast('🔐 是 Superuser（DX）用的登入，正式版會接 DX；組員不需要用到。'));
   if (page === 'login' || page === 'join') return;   // 登入頁、新朋友登記表：只有 Header
 
+  // ---------- 內容頁（牧養管理、組員名單、我…）一律開在地圖上的面板裡 ----------
+  // 面板＝地圖上的 iframe（網址加 ?panel=1）；直接開內容頁時，轉回地圖頁再打開面板，外框才會一致。
+  const FILE = location.pathname.split('/').pop() || 'index.html';
+  const MAPS = ['index.html', 'land.html'];
+  const inPanel = new URLSearchParams(location.search).has('panel');
+  if (inPanel) {
+    document.documentElement.classList.add('sg-panel');
+    document.addEventListener('click', e => {   // 面板裡點到地圖頁：整頁換過去
+      const a = e.target.closest('a[href]'); if (!a) return;
+      const f = (a.getAttribute('href') || '').split(/[?#]/)[0];
+      if (MAPS.includes(f)) { e.preventDefault(); window.top.location.href = a.getAttribute('href'); }
+    });
+    return;
+  }
+  if (page !== 'world' && page !== 'land') {
+    let last = 'index.html'; try { last = sessionStorage.getItem('sg_lastmap') || last; } catch (e) { /* */ }
+    location.replace(last + '#p=' + encodeURIComponent(FILE + location.search + location.hash)); return;
+  }
+  try { sessionStorage.setItem('sg_lastmap', FILE); } catch (e) { /* */ }
+
   // ---------- 外框（學遊戲介面，每頁位置相同） ----------
   // 狀態列＋活動（左上）／控制列（左）／任務列（右，只在地圖頁）／左下「我」／右下 世界地圖⇄我的領地／動態跑馬燈（底部中間）
   // 電腦（橫向且寬 ≥ 1024）：動態在右側欄；手機、直向：底部列＋可往上拉的抽屜。資料由 sg-frame.js 填入。
@@ -206,6 +226,43 @@
   const appbar = $('sgAppbar');
   if (appbar && page === 'world' && drawer) drawer.insertBefore(appbar, drawer.querySelector('.sg-grab').nextSibling);
   if (appbar && page === 'land') appbar.classList.add('hidden');
+
+  // ---------- 面板：開／關、上一頁、Esc、再按同一顆鈕關閉 ----------
+  {
+    let box = null, curUrl = '';
+    const withPanel = u => { const [path, hash] = u.split('#'); return path + (path.includes('?') ? '&' : '?') + 'panel=1' + (hash ? '#' + hash : ''); };
+    const mark = u => document.querySelectorAll('.sg-rail a, .sg-corner-me').forEach(a => {
+      const on = !!u && a.getAttribute('href') === u; a.toggleAttribute('aria-current', on); if (on) a.setAttribute('aria-current', 'page'); });
+    function show(u) {
+      if (!box) {
+        box = document.createElement('div'); box.className = 'sg-panelbox';
+        box.innerHTML = '<iframe title="內容"></iframe><button type="button" class="sg-panel-x" aria-label="關閉，回到地圖">✕</button>';
+        host.append(box);
+        box.querySelector('.sg-panel-x').addEventListener('click', close);
+      }
+      if (u !== curUrl) { box.querySelector('iframe').src = withPanel(u); curUrl = u; }
+      if (drawer && !DESK.matches) drawer.dataset.sheet = 'closed';
+      mark(u);
+    }
+    function hide() { if (box) { box.remove(); box = null; curUrl = ''; } mark(''); }
+    const fromHash = () => { const m = /^#p=(.+)$/.exec(location.hash); return m ? decodeURIComponent(m[1]) : ''; };
+    window.SGPanel = {
+      open(u) { if (u === curUrl) { close(); return; } const had = !!box; show(u); history[had ? 'replaceState' : 'pushState']({ panel: u }, '', '#p=' + encodeURIComponent(u)); },
+      close
+    };
+    function close() { if (history.state && history.state.panel) history.back(); else { hide(); history.replaceState(null, '', location.pathname + location.search); } }
+    addEventListener('popstate', () => { const u = fromHash(); if (u) show(u); else hide(); });
+    if (fromHash()) { history.replaceState({ panel: fromHash() }, '', location.hash); show(fromHash()); }
+    addEventListener('keydown', e => { if (e.key === 'Escape' && box) close(); });
+    // 地圖頁上點到內容頁的連結（控制列、「我」、彈出視窗、動態）：開面板，不換頁
+    document.addEventListener('click', e => {
+      const a = e.target.closest('a[href]'); if (!a || a.target || e.metaKey || e.ctrlKey) return;
+      const h = a.getAttribute('href') || '', f = h.split(/[?#]/)[0];
+      if (!/^[\w-]+\.html/.test(h) || MAPS.includes(f) || f === 'login.html') return;
+      e.preventDefault(); const d = a.closest('dialog'); if (d) d.close();
+      window.SGPanel.open(h);
+    });
+  }
 
   // ---------- 設定（齒輪）：深淺色、後台、登出 ----------
   {

@@ -1,7 +1,7 @@
 /* 漢威牧區｜外框的資料：狀態列（連續天數、讀經、柴火）、活動（壽星、近期活動）、任務列（今日、小組、牧區）、動態跑馬燈。
  * 每頁都載入（要先有 sg-shell.js、sg-feed.js）。點了用彈出視窗（U.sheet），不換頁。 */
 (async function () {
-  const U = window.SGU, F = window.SGF; if (!U || !F || !U.session) return;
+  const U = window.SGU, F = window.SGF; if (!U || !F || !U.session || !document.getElementById('sgStatus')) return;   // 面板裡不用
   const esc = U.esc, $ = U.$;
   let D = await F.load();
   const first = n => (n || '').length >= 3 ? n.slice(1) : n;
