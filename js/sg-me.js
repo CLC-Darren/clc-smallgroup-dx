@@ -1,4 +1,4 @@
-/* 漢威牧區｜我的：每日紀錄（月曆）、經文卡冊、徽章、收到的禮物、我的資料。全部只有自己看得到。 */
+/* 漢威牧區｜我：最上面是自己的角色（avatar）與總覽，下面是每日紀錄（月曆）、經文卡冊、徽章、收到的禮物、我的資料。全部只有自己看得到。 */
 (async function () {
   const U = window.SGU, F = window.SGF, esc = U.esc, $ = U.$;
   let D = await F.load();
@@ -10,6 +10,27 @@
   const title = (t, sub) => `<h2 style="font-size:20px;font-weight:800;margin:0 0 4px">${t}</h2>${sub ? `<p class="sg-sub">${sub}</p>` : ''}`;
   const lock = '<p class="sg-note" style="margin:0 0 12px">🔒 這一頁只有你自己看得到。區長、小組長只看得到全組的總數。</p>';
   const render = () => ({ tasks, cards, badges, gifts, profile })[sec]();
+
+  // ---------- 最上面：角色（示意圖，之後換成自己選的 Q 版角色）＋總覽 ----------
+  const HERO = '<svg viewBox="0 0 120 150" aria-hidden="true"><ellipse cx="60" cy="142" rx="34" ry="6" fill="rgba(0,0,0,.18)"/><path d="M33 92Q60 80 87 92L95 136Q60 147 25 136z" fill="#3BB3BD"/><path d="M33 92Q60 80 87 92L90 108Q60 98 30 108z" fill="#2F9AA3"/><rect x="43" y="92" width="34" height="40" rx="13" fill="#F4EBDD"/><rect x="46" y="105" width="28" height="6" rx="2" fill="#C98B55"/><circle cx="60" cy="62" r="33" fill="#F2C6A0"/><path d="M27 62Q28 25 60 25Q92 25 93 62Q85 43 60 41Q37 43 27 62z" fill="#5A3B26"/><circle cx="48" cy="67" r="4.5" fill="#2B2420"/><circle cx="72" cy="67" r="4.5" fill="#2B2420"/><circle cx="49.5" cy="65.5" r="1.4" fill="#fff"/><circle cx="73.5" cy="65.5" r="1.4" fill="#fff"/><path d="M52 79Q60 85 68 79" stroke="#B4492F" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="41" cy="76" r="5" fill="#F7A8A0" opacity=".6"/><circle cx="79" cy="76" r="5" fill="#F7A8A0" opacity=".6"/></svg>';
+  function hero() {
+    const days = D.myDaily.days || {}, read = Object.values(D.myDaily.books || {}).filter(Boolean).length;
+    const ARMOR = window.SG_ARMOR || [], done = D.me.courses || {}, cats = D.lists.courses || [];
+    const catDone = id => { if (id === 'exp' || id === 'bap') return !!done[id]; const c = cats.find(x => x.id === id); return !!c && c.items.every(i => done[i.id]); };
+    const armor = ARMOR.filter(a => a.by.every(catDone)).length;
+    const cards = new Set((D.myDaily.cards || []).map(c => c.id)).size, allCards = (window.SG_VERSES || []).length;
+    const badges = U.badgesOf(D.me, D.myDaily, D.posts, D.lists.courses, D.tasks).size;
+    const prayed = D.posts.filter(p => (p.prayedBy || []).includes(U.session.personId)).length;
+    const stat = (ic, v, l, go) => `<button type="button" class="sg-hero-stat"${go ? ` data-go="${go}"` : ''}><span class="v">${ic} ${v}</span><span class="l">${l}</span></button>`;
+    $('heroBox').innerHTML = `<section class="sg-hero"><div class="sg-hero-av">${HERO}</div>
+      <div class="sg-hero-info"><div class="sg-hero-name">${esc(D.me.name)}</div>
+        <div class="sg-note">${esc(D.myGroup ? D.myGroup.name : '漢威牧區')}・${esc({ district: '區長', leader: '小組長', member: '組員' }[U.session.role] || '')}</div>
+        <div class="sg-hero-lv">讀經等級 <b>${read}</b></div>
+        <button type="button" class="sg-btn" disabled title="之後開放：5 個選項，1 分鐘選完">🎨 更換造型（之後開放）</button></div></section>
+      <div class="sg-hero-stats">${stat('🔥', U.streak(days, D.tasks, D.app.graceDays ?? 1), '連續天數', 'tasks')}${stat('📖', `${read}/66`, '聖經書卷', '')}${stat('🛡️', `${armor}/${ARMOR.length || 6}`, '全副軍裝', '')}
+        ${stat('📚', `${cards}/${allCards}`, '經文卡', 'cards')}${stat('🏅', badges, '徽章', 'badges')}${stat('🙏', prayed, '為人禱告', '')}</div>`;
+  }
+  $('heroBox').addEventListener('click', e => { const b = e.target.closest('[data-go]'); if (b) { sec = b.dataset.go; history.replaceState(null, '', '#' + sec); nav(); render(); document.getElementById('sec').scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
 
   // ---------- 每日紀錄 ----------
   function tasks() {
@@ -91,5 +112,5 @@
       </div></section>`;
   }
 
-  nav(); render();
+  hero(); nav(); render();
 })();

@@ -187,9 +187,9 @@
   const icon = (k, size) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k]}</svg>`;
   const isMap = page === 'world' || page === 'land';
   const lead = session.role !== 'member';
-  // 開發期預覽（🧪 測試面板切換）：分批開放時的樣子。all＝全部、nogame＝管理＋社群（沒有地圖、遊戲）、admin＝只有管理
-  const PREVIEW = (() => { try { return localStorage.getItem('sg_preview') || 'all'; } catch (e) { return 'all'; } })();
-  const noGame = PREVIEW !== 'all', noSocial = PREVIEW === 'admin';
+  // 開發期預覽（🧪 測試面板切換）：分批開放時的樣子。all＝全部、nogame＝不含遊戲（管理＋社群一起開放）
+  const PREVIEW = (() => { try { return localStorage.getItem('sg_preview') === 'all' || !localStorage.getItem('sg_preview') ? 'all' : 'nogame'; } catch (e) { return 'all'; } })();
+  const noGame = PREVIEW !== 'all', noSocial = false;
   if (noGame && page === 'land') { location.replace('index.html'); return; }
   const mapOn = isMap && !noGame;
   document.body.classList.add('sg-frame'); if (mapOn) document.body.classList.add('sg-mapnav');
@@ -200,17 +200,22 @@
   const status = add('sg-status', '<a class="sg-st-me" href="me.html" aria-label="我的個人頁"><span class="sg-st-av"></span></a><span id="sgStatus" class="sg-st-chips"></span>');
   if (!mapOn) { const main = document.querySelector('main'); if (main) main.prepend(status); }
   // 控制列（左）
-  const railBtn = (k, href, label, cur) => `<a class="sg-rb" href="${href}"${cur ? ' aria-current="page"' : ''}><span class="o">${icon(k, 20)}</span><span class="t">${label}</span></a>`;
+  const railBtn = (ic, href, label, cur) => `<a class="sg-rb" href="${href}"${cur ? ' aria-current="page"' : ''}><span class="o">${ic}</span><span class="t">${label}</span></a>`;   // 圖示暫用 emoji（示意，之後換成畫好的圖示）
   // 順序：小組、收藏、（小組長以上）牧養管理、設定、🧪測試
-  const rail = add('sg-rail', `${noSocial ? '' : railBtn('flag', 'fellowship.html', '小組', false)}${railBtn('bag', 'me.html#cards', '收藏', false)}
-    ${lead ? railBtn('care', 'care.html', '牧養管理', false) : ''}
-    <button type="button" class="sg-rb" id="gearBtn" aria-haspopup="true"><span class="o">${icon('gear', 20)}</span><span class="t">設定</span></button>`, mapOn ? host : document.body);
+  const rail = add('sg-rail', `${noSocial ? '' : railBtn('🚩', 'fellowship.html', '小組', false)}${railBtn('🎒', 'me.html#cards', '收藏', false)}
+    ${lead ? railBtn('🐑', 'care.html', '牧養管理', false) : ''}
+    <button type="button" class="sg-rb" id="gearBtn" aria-haspopup="true"><span class="o">⚙️</span><span class="t">設定</span></button>`, mapOn ? host : document.body);
   // 任務列（右，地圖頁）
   if (isMap) add('sg-taskcol', '', host).id = 'sgTasks';
   // 左下「我」、右下 世界地圖⇄我的領地、跑馬燈
   const toLand = page === 'world';
-  const meBtn = `<a class="sg-corner sg-corner-me" href="me.html"${page === 'me' ? ' aria-current="page"' : ''}><span class="o" id="sgMeAv">${icon('members', 24)}</span><span class="t">我</span></a>`;
-  const swBtn = `<a class="sg-corner sg-corner-sw" href="${toLand ? 'land.html' : 'index.html'}"><span class="o">${icon(toLand ? 'land' : 'world', 26)}</span><span class="t">${toLand ? '我的領地' : '世界地圖'}</span></a>`;
+  const ART = {   // 示意插圖（之後換成畫好的圖）
+    me: '<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="8" y="10" width="34" height="46" rx="6" fill="#8E5BD6" stroke="#5E3A9E" stroke-width="2" transform="rotate(-12 25 33)"/><rect x="20" y="6" width="36" height="50" rx="6" fill="#F6C343" stroke="#B9831A" stroke-width="2.5"/><rect x="24" y="10" width="28" height="42" rx="4" fill="#FFE8A3"/><path d="M28 50c1-9 5-13 10-13s9 4 10 13z" fill="#3BB3BD"/><circle cx="38" cy="26" r="8" fill="#F2C6A0"/><path d="M30 24c1-8 15-8 16 0-4-3-12-3-16 0z" fill="#5A3B26"/></svg>',
+    world: '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M6 20l15-6 21 6 16-6v34l-16 6-21-6-15 6z" fill="#F3E2A6" stroke="#B89A55" stroke-width="2.5" stroke-linejoin="round"/><path d="M21 14v34M42 20v34" stroke="#C9AE6A" stroke-width="2"/><path d="M11 40c7-7 11 2 17-4s11 0 16-5" stroke="#33BDB9" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M44 4c-6 0-10 4-10 9 0 7 10 16 10 16s10-9 10-16c0-5-4-9-10-9z" fill="#E86F51" stroke="#A63F27" stroke-width="2.5"/><circle cx="44" cy="13" r="3.5" fill="#fff"/></svg>',
+    land: '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M4 50c6-10 16-14 28-14s22 4 28 14c-8 6-48 6-56 0z" fill="#F2C27C" stroke="#BE8550" stroke-width="2"/><path d="M12 50c5-7 12-10 20-10s15 3 20 10c-6 4-34 4-40 0z" fill="#9CCB45" stroke="#5E8F2B" stroke-width="2"/><path d="M14 52c8-3 14 1 22-2s12 0 16-1" stroke="#4FCFD0" stroke-width="3" fill="none" stroke-linecap="round"/><rect x="36" y="30" width="13" height="13" fill="#F4EBDD" stroke="#A99A7E" stroke-width="1.5"/><path d="M34 31l8.5-8 8.5 8z" fill="#E86F51" stroke="#A63F27" stroke-width="1.5"/><rect x="20" y="30" width="3.5" height="13" fill="#C98B55"/><circle cx="21.8" cy="25" r="9" fill="#4E8F48" stroke="#2C5A35" stroke-width="2"/></svg>'
+  };
+  const meBtn = `<a class="sg-corner sg-corner-me" href="me.html"${page === 'me' ? ' aria-current="page"' : ''}><span class="o">${ART.me}</span><span class="t">我</span></a>`;
+  const swBtn = `<a class="sg-corner sg-corner-sw" href="${toLand ? 'land.html' : 'index.html'}"><span class="o">${ART[toLand ? 'land' : 'world']}</span><span class="t">${toLand ? '我的領地' : '世界地圖'}</span></a>`;
   const bar = add('sg-bottom', `${meBtn}<button type="button" class="sg-ticker" id="sgTicker" aria-label="最新動態${mapOn ? '（按一下展開）' : ''}"><span id="sgTickerTxt">　</span>${mapOn ? '<svg class="sg-tick-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>' : ''}</button>${swBtn}`, document.body);
 
   // ---------- 手機：動態抽屜。不用拖拉（避免跟 Android 返回手勢、上下捲動衝突），按箭頭展開到頂端／收合 ----------
@@ -320,7 +325,7 @@
         : '<p class="sg-note">色票在「世界」「我的領地」頁才會顯示。</p>';
       panel.innerHTML = `<h3>現在</h3><div class="now">身分：<b>${esc(me ? me.label : ROLE_LABEL[session.role])}</b><br>頁面：<b>${esc(title)}</b>（${esc(file)}）</div>
         <h3>切換身分</h3><div class="roles">${DEMO.map(d => `<button type="button" data-demo="${d.personId}" aria-pressed="${d.personId === session.personId}">${ROLE_LABEL[d.role]}</button>`).join('')}</div>
-        <h3>預覽模式（分批開放時的樣子）</h3><div class="roles">${[['all', '全部'], ['nogame', '管理＋社群'], ['admin', '只有管理']].map(([k, l]) => `<button type="button" data-pv="${k}" aria-pressed="${PREVIEW === k}">${l}</button>`).join('')}</div>
+        <h3>預覽模式（分批開放時的樣子）</h3><div class="roles">${[['all', '全部（含遊戲）'], ['nogame', '不含遊戲（管理＋社群）']].map(([k, l]) => `<button type="button" data-pv="${k}" aria-pressed="${PREVIEW === k}">${l}</button>`).join('')}</div>
         <h3>深色模式（候選，切到深色才看得出來）</h3><div class="roles">${[['a', '石板藍'], ['b', '暖灰'], ['c', '深海綠'], ['o', '原本']].map(([k, l]) => `<button type="button" data-dk="${k}" aria-pressed="${getDark() === k}">${l}</button>`).join('')}</div>
         <h3>登入</h3><button type="button" class="go" data-login>↪ 回登入頁</button>
         <h3>材質色票（亮面／暗面／陰影；點色塊複製色碼）</h3>${sw}`;
