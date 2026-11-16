@@ -148,12 +148,20 @@
   const FILE = location.pathname.split('/').pop() || 'index.html';
   const MAPS = ['index.html', 'land.html'];
   const inPanel = new URLSearchParams(location.search).has('panel');
+  const withPanel = u => { const [path, hash] = u.split('#'); return path + (path.includes('?') ? '&' : '?') + 'panel=1' + (hash ? '#' + hash : ''); };
+  let parentPanel = null; try { parentPanel = window.parent !== window && window.parent.SGPanel; } catch (e) { /* */ }
+  if (parentPanel && !inPanel) {   // 面板裡被程式換頁、少了 ?panel=1：地圖頁整頁換過去，其他補上參數
+    if (MAPS.includes(FILE)) window.top.location.href = FILE + location.search + location.hash; else location.replace(withPanel(FILE + location.search + location.hash));
+    return;
+  }
   if (inPanel) {
     document.documentElement.classList.add('sg-panel');
-    document.addEventListener('click', e => {   // 面板裡點到地圖頁：整頁換過去
-      const a = e.target.closest('a[href]'); if (!a) return;
-      const f = (a.getAttribute('href') || '').split(/[?#]/)[0];
-      if (MAPS.includes(f)) { e.preventDefault(); window.top.location.href = a.getAttribute('href'); }
+    document.addEventListener('click', e => {   // 面板裡的連結：地圖頁整頁換過去；其他頁原地換（不留歷史，返回鍵才不會亂）
+      const a = e.target.closest('a[href]'); if (!a || a.target) return;
+      const h = a.getAttribute('href') || '', f = h.split(/[?#]/)[0];
+      if (!/^[\w-]+\.html/.test(h)) return;
+      e.preventDefault();
+      if (MAPS.includes(f)) window.top.location.href = h; else location.replace(withPanel(h));
     });
     return;
   }
@@ -172,7 +180,8 @@
     care: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
     members: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c2 .6 3.2 2.3 3.5 5.2"/>',
     gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>',
-    bag: '<path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>'
+    bag: '<path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
+    flag: '<path d="M6 3v18"/><path d="M6 4h12v11l-6-3-6 3"/><path d="M9 7.5l3 1.6 3-1.6M9 10.5l3 1.6 3-1.6"/>'
   };
   const icon = (k, size) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k]}</svg>`;
   const isMap = page === 'world' || page === 'land';
@@ -184,10 +193,11 @@
   const status = add('sg-status', '<a class="sg-st-me" href="me.html" aria-label="我的個人頁"><span class="sg-st-av"></span></a><span id="sgStatus" class="sg-st-chips"></span>');
   if (!isMap) { const main = document.querySelector('main'); if (main) main.prepend(status); }
   // 控制列（左）
-  const railBtn = (k, href, label, cur) => `<a class="sg-rb" href="${href}"${cur ? ' aria-current="page"' : ''}><span class="o">${icon(k, 22)}</span><span class="t">${label}</span></a>`;
-  const rail = add('sg-rail', `<button type="button" class="sg-rb" id="gearBtn" aria-haspopup="true"><span class="o">${icon('gear', 22)}</span><span class="t">設定</span></button>
-    ${lead ? railBtn('care', 'care.html', '牧養管理', page === 'care') + railBtn('members', 'members.html', '組員名單', page === 'members') : ''}
-    ${railBtn('bag', 'me.html#cards', '收藏', false)}`, isMap ? host : document.body);
+  const railBtn = (k, href, label, cur) => `<a class="sg-rb" href="${href}"${cur ? ' aria-current="page"' : ''}><span class="o">${icon(k, 20)}</span><span class="t">${label}</span></a>`;
+  // 順序：小組、收藏、（小組長以上）牧養管理、設定、🧪測試
+  const rail = add('sg-rail', `${railBtn('flag', 'fellowship.html', '小組', false)}${railBtn('bag', 'me.html#cards', '收藏', false)}
+    ${lead ? railBtn('care', 'care.html', '牧養管理', false) : ''}
+    <button type="button" class="sg-rb" id="gearBtn" aria-haspopup="true"><span class="o">${icon('gear', 20)}</span><span class="t">設定</span></button>`, isMap ? host : document.body);
   // 任務列（右，地圖頁）
   if (isMap) add('sg-taskcol', '', host).id = 'sgTasks';
   // 左下「我」、右下 世界地圖⇄我的領地、跑馬燈
@@ -230,19 +240,27 @@
   // ---------- 面板：開／關、上一頁、Esc、再按同一顆鈕關閉 ----------
   {
     let box = null, curUrl = '';
-    const withPanel = u => { const [path, hash] = u.split('#'); return path + (path.includes('?') ? '&' : '?') + 'panel=1' + (hash ? '#' + hash : ''); };
     const mark = u => document.querySelectorAll('.sg-rail a, .sg-corner-me').forEach(a => {
-      const on = !!u && a.getAttribute('href') === u; a.toggleAttribute('aria-current', on); if (on) a.setAttribute('aria-current', 'page'); });
+      const on = !!u && a.getAttribute('href') === u; if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    const frame = () => box && box.querySelector('iframe');
     function show(u) {
       if (!box) {
         box = document.createElement('div'); box.className = 'sg-panelbox';
-        box.innerHTML = '<iframe title="內容"></iframe><button type="button" class="sg-panel-x" aria-label="關閉，回到地圖">✕</button>';
-        host.append(box);
+        box.innerHTML = '<iframe title="內容"></iframe><button type="button" class="sg-panel-x" aria-label="關閉，回到地圖">✕</button>'
+          + '<div class="sg-panel-foot"><button type="button" class="sg-panel-back" aria-label="返回"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button></div>';
+        document.body.append(box);
         box.querySelector('.sg-panel-x').addEventListener('click', close);
-      }
-      if (u !== curUrl) { box.querySelector('iframe').src = withPanel(u); curUrl = u; }
+        box.querySelector('.sg-panel-back').addEventListener('click', back);
+        frame().src = withPanel(u);
+      } else if (u !== curUrl) frame().contentWindow.location.replace(withPanel(u));   // 換面板不留歷史
+      curUrl = u;
       if (drawer && !DESK.matches) drawer.dataset.sheet = 'closed';
       mark(u);
+    }
+    // 返回：面板裡的頁面有上一層（標題前的「‹」）就回上一層，否則關掉面板回地圖
+    function back() {
+      let up = null; try { up = frame().contentDocument.querySelector('.sg-appbar h1 a[href]'); } catch (e) { /* */ }
+      if (up) frame().contentWindow.location.replace(withPanel(up.getAttribute('href'))); else close();
     }
     function hide() { if (box) { box.remove(); box = null; curUrl = ''; } mark(''); }
     const fromHash = () => { const m = /^#p=(.+)$/.exec(location.hash); return m ? decodeURIComponent(m[1]) : ''; };
@@ -252,7 +270,7 @@
     };
     function close() { if (history.state && history.state.panel) history.back(); else { hide(); history.replaceState(null, '', location.pathname + location.search); } }
     addEventListener('popstate', () => { const u = fromHash(); if (u) show(u); else hide(); });
-    if (fromHash()) { history.replaceState({ panel: fromHash() }, '', location.hash); show(fromHash()); }
+    if (fromHash()) { const u = fromHash(); history.replaceState(null, '', location.pathname + location.search); history.pushState({ panel: u }, '', '#p=' + encodeURIComponent(u)); show(u); }   // 上一頁＝回地圖
     addEventListener('keydown', e => { if (e.key === 'Escape' && box) close(); });
     // 地圖頁上點到內容頁的連結（控制列、「我」、彈出視窗、動態）：開面板，不換頁
     document.addEventListener('click', e => {

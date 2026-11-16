@@ -7,12 +7,12 @@
   <script>try{var t=localStorage.getItem('sg_theme');if(t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.classList.add('dark')}catch(e){}</script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{sans:['"CLC Arial"','Arial','"Microsoft JhengHei"','sans-serif']}}}};</script>
-  <link rel="stylesheet" href="css/sg-roster.css?v=20261116h">
-  <link rel="stylesheet" href="css/sg-app.css?v=20261116h">
+  <link rel="stylesheet" href="css/sg-roster.css?v=20261116i">
+  <link rel="stylesheet" href="css/sg-app.css?v=20261116i">
 </head>
 <body class="min-h-screen" data-mode="members" data-page="members" data-roles="district,leader">
   <main class="sg-main">
-  <div class="sg-appbar" id="sgAppbar"><h1>組員名單</h1></div>
+  <div class="sg-appbar" id="sgAppbar"><h1><a href="care.html" style="color:inherit;text-decoration:none" aria-label="回牧養管理">‹</a> 組員名單</h1></div>
   <div class="max-w-[1500px] px-4 lg:px-6 pb-6">
     <!-- 靜態階段沒有登入；保留這兩個區塊給名單程式使用 -->
     <section id="gateChecking" class="hidden" role="status">讀取中…</section>
@@ -87,14 +87,14 @@
 
   <input type="file" id="photoInput" accept="image/*" class="hidden">
 
-  <script src="js/sg-seed-static.js?v=20261116h"></script>
-  <script src="js/sg-mock-data.js?v=20261116h"></script>
-  <script src="js/sg-mockdb.js?v=20261116h"></script>
-  <script src="js/sg-shell.js?v=20261116h"></script>
-  <script src="js/sg-data.js?v=20261116h"></script>
-  <script src="js/sg-feed.js?v=20261116h"></script>
-  <script src="js/sg-frame.js?v=20261116h"></script>
-  <script src="js/sg-export.js?v=20261116h"></script>
-  <script src="js/sg-roster.js?v=20261116h"></script>
+  <script src="js/sg-seed-static.js?v=20261116i"></script>
+  <script src="js/sg-mock-data.js?v=20261116i"></script>
+  <script src="js/sg-mockdb.js?v=20261116i"></script>
+  <script src="js/sg-shell.js?v=20261116i"></script>
+  <script src="js/sg-data.js?v=20261116i"></script>
+  <script src="js/sg-feed.js?v=20261116i"></script>
+  <script src="js/sg-frame.js?v=20261116i"></script>
+  <script src="js/sg-export.js?v=20261116i"></script>
+  <script src="js/sg-roster.js?v=20261116i"></script>
 </body>
 </html>
