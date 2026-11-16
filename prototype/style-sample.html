@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>CLC Small Group｜風格樣張</title>
+<style>
+  @font-face { font-family: "CLC Arial"; src: local("Arial"); font-weight: 100 549; }
+  @font-face { font-family: "CLC Arial"; src: local("Arial Bold"), local("Arial-BoldMT"); font-weight: 550 1000; }
+  :root { --ink: #2B2420; --paper: #F3E9D7; --sea: #9CCFD8; --sea2: #7FBAC6; --land: #E9D9B4; --land2: #D9C493; --teal: #007E8A; --sun: #F2A93B; --red: #D9534F; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #1B1E27; color: #F5F5F7; font-family: "CLC Arial", Arial, "Microsoft JhengHei", sans-serif; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 20px 14px 40px; }
+  h1 { font-size: 22px; margin: 0 0 4px; } .sub { color: rgba(235,235,245,.65); font-size: 14px; margin: 0 0 18px; line-height: 1.6; }
+  .row { display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-start; }
+  .label { font-size: 13px; font-weight: 800; color: #F2A93B; margin: 0 0 8px; letter-spacing: .5px; }
+  /* 手機框 */
+  .phone { width: 360px; height: 740px; border-radius: 36px; background: #0E0F14; padding: 10px; box-shadow: 0 20px 60px rgba(0,0,0,.5); flex: none; }
+  .screen { position: relative; width: 100%; height: 100%; border-radius: 28px; overflow: hidden; background: var(--sea); color: var(--ink); }
+  .hd { position: absolute; top: 0; left: 0; right: 0; height: 46px; background: #090A0F; display: flex; align-items: center; padding: 0 14px; z-index: 5; }
+  .logo { background: #007E8A; color: #fff; font-weight: 700; font-size: 13px; height: 32px; padding: 0 11px; border-radius: 9px; display: flex; align-items: center; }
+  .key { margin-left: auto; width: 32px; height: 32px; border-radius: 9px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12); }
+  .hud { position: absolute; top: 54px; left: 10px; right: 10px; display: flex; gap: 8px; align-items: center; z-index: 4; }
+  .chip { background: rgba(43,36,32,.82); color: #FFF4E0; border-radius: 999px; padding: 5px 10px 5px 6px; font-size: 12px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
+  .dot { width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; }
+  .gear { margin-left: auto; width: 34px; height: 34px; border-radius: 50%; background: rgba(43,36,32,.82); color: #FFF4E0; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .side { position: absolute; right: 10px; top: 100px; display: flex; flex-direction: column; gap: 8px; z-index: 4; }
+  .side div { position: relative; width: 42px; height: 42px; border-radius: 12px; background: #FFF4E0; border: 2px solid #C9A86A; display: flex; align-items: center; justify-content: center; font-size: 19px; box-shadow: 0 3px 0 #B08C4E; }
+  .side div i { position: absolute; top: -4px; right: -4px; width: 11px; height: 11px; border-radius: 50%; background: var(--red); border: 2px solid #FFF4E0; }
+  svg { display: block; }
+  /* 動態面板（往上拉） */
+  .sheet { position: absolute; left: 0; right: 0; bottom: 58px; height: 34%; background: #FFFBF3; border-radius: 22px 22px 0 0; box-shadow: 0 -8px 24px rgba(43,36,32,.25); z-index: 6; padding: 8px 14px 0; overflow: hidden; }
+  .grab { width: 40px; height: 5px; border-radius: 3px; background: #D8CBB3; margin: 0 auto 8px; }
+  .quest { display: flex; align-items: center; gap: 10px; background: #FFF0D2; border: 1.5px solid #F2C46F; border-radius: 14px; padding: 8px 10px; font-size: 13px; }
+  .quest b { display: block; font-size: 14px; }
+  .btn { margin-left: auto; background: var(--teal); color: #fff; font-weight: 800; font-size: 13px; border-radius: 10px; padding: 7px 11px; white-space: nowrap; box-shadow: 0 3px 0 #005A62; }
+  .post { display: flex; gap: 9px; padding: 10px 0; border-bottom: 1px solid #EFE4D0; font-size: 13px; line-height: 1.5; }
+  .av { width: 32px; height: 32px; border-radius: 50%; flex: none; color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+  .post small { color: #8A7B6A; display: block; }
+  .tabs { position: absolute; left: 0; right: 0; bottom: 0; height: 58px; background: #2B2420; display: flex; z-index: 7; }
+  .tabs div { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px; font-weight: 800; color: #B9A88F; }
+  .tabs div.on { color: #F2A93B; }
+  .tabs span { font-size: 19px; }
+  /* 規則 */
+  .rules { flex: 1; min-width: 300px; }
+  .card { background: #262A35; border-radius: 16px; padding: 16px; margin-bottom: 14px; }
+  .card h3 { margin: 0 0 10px; font-size: 15px; }
+  .sw { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .sw div { border-radius: 10px; overflow: hidden; font-size: 11px; }
+  .sw span { display: block; height: 22px; }
+  .sw p { margin: 0; padding: 4px 6px; background: #1F222C; color: #D0D0D8; }
+  ul { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.8; color: #D0D0D8; }
+  @keyframes flick { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.12) translateY(-1px); opacity: .85; } }
+  .flame { animation: flick 1.2s ease-in-out infinite; transform-origin: center bottom; transform-box: fill-box; }
+  @keyframes pulse { 0%,100% { r: 10; opacity: .35; } 50% { r: 16; opacity: .1; } }
+  .pulse { animation: pulse 2s ease-in-out infinite; }
+  @keyframes drift { from { transform: translateX(0); } to { transform: translateX(30px); } }
+  .cloud { animation: drift 9s ease-in-out infinite alternate; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>風格樣張：等角 2.5D（全部用 SVG 畫，沒有載入任何圖檔）</h1>
+  <p class="sub">左：世界大地圖（新約地中海＋保羅第一次宣教路線，地圖上方 2/3、動態面板下方 1/3）。中：我的領地（迦南地，會幕、挪亞方舟、西奈山、先知）。右：設計規則。<br>這只是看風格與手感的樣張，不是正式功能；圖上的人名、數字都是示意。</p>
+  <div class="row">
+    <div>
+      <p class="label">① 世界大地圖（共同區）</p>
+      <div class="phone"><div class="screen">
+        <div class="hd"><span class="logo">CLC Small Group</span><span class="key"></span></div>
+        <div class="hud">
+          <span class="chip"><span class="dot" style="background:#F2A93B">🔥</span>營火 72%</span>
+          <span class="chip"><span class="dot" style="background:#7FBAC6">📍</span>帕弗</span>
+          <span class="gear">⚙</span>
+        </div>
+        <div class="side"><div>🗓️<i></i></div><div>🎁</div><div>📜<i></i></div></div>
+        <svg id="world" viewBox="560 120 320 527" width="340" height="560" style="position:absolute;top:46px;left:0"></svg>
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="quest"><span style="font-size:22px">🔥</span><div><b>今晚 20:00 建宇小組</b>6 人會到・你會來嗎？</div><span class="btn">我會到</span></div>
+          <div class="post"><span class="av" style="background:#C2255C">莊</span><div><b>莊俊廷</b> 蓋好了「挪亞方舟」🎉<small>2 小時前・🙏 5　❤️ 3</small></div></div>
+          <div class="post"><span class="av" style="background:#6741D9">林</span><div><b>林威勛</b> 代禱：下週二的面試<small>今天・8 人為你禱告</small></div></div>
+        </div>
+        <div class="tabs"><div class="on"><span>🗺️</span>世界</div><div><span>⛺</span>我的領地</div><div><span>💗</span>牧養</div><div><span>👥</span>名冊</div></div>
+      </div></div>
+    </div>
+    <div>
+      <p class="label">② 我的領地（個人・迦南地）</p>
+      <div class="phone"><div class="screen" style="background:#BFE3C9">
+        <div class="hd"><span class="logo">CLC Small Group</span><span class="key"></span></div>
+        <div class="hud">
+          <span class="chip"><span class="dot" style="background:#E9D9B4">🛡️</span>軍裝 3/6</span>
+          <span class="chip"><span class="dot" style="background:#F2A93B">✨</span>光 +24/天</span>
+          <span class="gear">⚙</span>
+        </div>
+        <div class="side"><div>📖<i></i></div><div>🙏<i></i></div><div>📚</div></div>
+        <svg id="land" viewBox="200 0 500 824" width="340" height="560" style="position:absolute;top:46px;left:0"></svg>
+        <div class="sheet" style="height:26%">
+          <div class="grab"></div>
+          <div class="quest"><span style="font-size:22px">📖</span><div><b>今日任務 1 / 2</b>QT ✓・禱告 還沒</div><span class="btn">去禱告</span></div>
+          <div class="post" style="border:0"><span class="av" style="background:#8A6D3B">讀</span><div><b>出埃及記 第 3 天</b>（約 3 分鐘）<small>讀完後「西奈山」升到 Lv 2</small></div></div>
+        </div>
+        <div class="tabs"><div><span>🗺️</span>世界</div><div class="on"><span>⛺</span>我的領地</div><div><span>💗</span>牧養</div><div><span>👥</span>名冊</div></div>
+      </div></div>
+    </div>
+    <div class="rules">
+      <p class="label">③ 設計規則（所有元件照這套做，風格就會一致）</p>
+      <div class="card"><h3>調色盤：8 色</h3><div class="sw" id="sw"></div></div>
+      <div class="card"><h3>造型</h3><ul>
+        <li>等角視角：所有建築用同一個角度（寬 2：高 1 的菱形格）</li>
+        <li>每個物件只有三種明暗：<b>頂面最亮、左面中間、右面最暗</b></li>
+        <li>建築＝方塊＋屋頂＋一個識別物（旗、火、帳幕布），不畫細節</li>
+        <li>人物＝圓頭＋圓錐身體，只換顏色與一個配件</li>
+        <li>等級用「變高、變大、加旗子」表示；星星表示深度</li>
+      </ul></div>
+      <div class="card"><h3>效能</h3><ul>
+        <li>沒有圖片檔：地圖與建築都是程式產生的 SVG，整頁不到 20 KB</li>
+        <li>動畫只有三種小的：營火閃動、目前城市的光圈、雲飄</li>
+        <li>建築用同一個函式畫：<code>block(位置, 大小, 顏色)</code>，新增一棟只要一行</li>
+      </ul></div>
+      <div class="card"><h3>請你看的地方</h3><ul>
+        <li>整體感覺：太卡通？太簡單？還是剛好？</li>
+        <li>顏色：要更暖、更冷，還是要更鮮豔？</li>
+        <li>可以把這頁截圖給 ChatGPT，請它提風格建議；我再照建議調規則</li>
+      </ul></div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+  // 8 色，每色三種明暗：頂（亮）、左（中）、右（暗）
+  const PAL = {
+    stone: ['#F4EBDD', '#D9CBB4', '#B9A78A'], wood: ['#C98B55', '#A86B3C', '#83512C'], roof: ['#E86F51', '#C9553A', '#A2422D'],
+    teal: ['#3BB3BD', '#0E8C97', '#08666E'], cloth: ['#FFFFFF', '#E9E4F5', '#C9C0E3'], gold: ['#FFD66B', '#F2A93B', '#C98417'],
+    grass: ['#9BD88E', '#6FBF64', '#4E9A48'], rock: ['#B8B2AA', '#948C82', '#6F675E']
+  };
+  const sw = document.getElementById('sw');
+  Object.entries(PAL).forEach(([k, c]) => { sw.insertAdjacentHTML('beforeend', `<div><span style="background:linear-gradient(90deg,${c[0]} 0 33%,${c[1]} 33% 66%,${c[2]} 66%)"></span><p>${k}</p></div>`); });
+
+  // 等角方塊：gx, gy（格子座標），w, d（寬深），h（高），顏色
+  function iso(ox, oy, t) { return (gx, gy, z = 0) => [ox + (gx - gy) * t, oy + (gx + gy) * t / 2 - z]; }
+  function block(g, P, gx, gy, w, d, h, c) {
+    const a = P(gx, gy, h), b = P(gx + w, gy, h), cc = P(gx + w, gy + d, h), dd = P(gx, gy + d, h);
+    const b0 = P(gx + w, gy, 0), c0 = P(gx + w, gy + d, 0), d0 = P(gx, gy + d, 0);
+    const pts = arr => arr.map(p => p.join(',')).join(' ');
+    el('polygon', { points: pts([dd, cc, c0, d0]), fill: c[1] }, g);
+    el('polygon', { points: pts([b, cc, c0, b0]), fill: c[2] }, g);
+    el('polygon', { points: pts([a, b, cc, dd]), fill: c[0] }, g);
+    return { top: [(a[0] + cc[0]) / 2, (a[1] + cc[1]) / 2] };
+  }
+  function roof(g, P, gx, gy, w, d, h, rh, c) {   // 雙斜屋頂（沿 x 方向）
+    const m1 = P(gx, gy + d / 2, h + rh), m2 = P(gx + w, gy + d / 2, h + rh);
+    const a = P(gx, gy, h), b = P(gx + w, gy, h), cc = P(gx + w, gy + d, h), dd = P(gx, gy + d, h);
+    const pts = arr => arr.map(p => p.join(',')).join(' ');
+    el('polygon', { points: pts([dd, cc, m2, m1]), fill: c[1] }, g);
+    el('polygon', { points: pts([b, cc, m2]), fill: c[2] }, g);
+    el('polygon', { points: pts([a, b, m2, m1]), fill: c[0] }, g);
+  }
+  function flag(g, x, y, color) { el('line', { x1: x, y1: y, x2: x, y2: y - 26, stroke: '#5A4632', 'stroke-width': 2 }, g); el('polygon', { points: `${x},${y - 26} ${x + 14},${y - 21} ${x},${y - 16}`, fill: color }, g); }
+  function label(g, x, y, text, sub, strong) {
+    const w = Math.max(text.length * 15 + 16, sub ? sub.length * 11 + 14 : 0);
+    el('rect', { x: x - w / 2, y: y, width: w, height: sub ? 38 : 24, rx: 8, fill: strong ? '#2B2420' : 'rgba(255,251,243,.92)', stroke: strong ? '#F2A93B' : '#C9B48E', 'stroke-width': 1.5 }, g);
+    el('text', { x, y: y + 17, 'text-anchor': 'middle', 'font-size': 14, 'font-weight': 800, fill: strong ? '#FFE3A8' : '#2B2420' }, g).textContent = text;
+    if (sub) el('text', { x, y: y + 32, 'text-anchor': 'middle', 'font-size': 11, 'font-weight': 700, fill: strong ? '#F2C46F' : '#7A6A58' }, g).textContent = sub;
+  }
+  function person(g, x, y, body, acc) {
+    el('ellipse', { cx: x, cy: y + 2, rx: 9, ry: 4, fill: 'rgba(0,0,0,.18)' }, g);
+    el('polygon', { points: `${x - 9},${y} ${x + 9},${y} ${x},${y - 24}`, fill: body }, g);
+    el('circle', { cx: x, cy: y - 27, r: 7, fill: '#F1C9A5' }, g);
+    if (acc) el('path', { d: `M${x - 8},${y - 29} q8,-10 16,0`, fill: acc }, g);
+  }
+
+  // ---------- ① 世界地圖：經緯度投影到 900×640 ----------
+  const W = document.getElementById('world');
+  const proj = (lon, lat) => [(lon - 11) * 33, (43.2 - lat) * 40 + 40];
+  const poly = (pts, fill, stroke) => el('polygon', { points: pts.map(p => proj(p[0], p[1]).join(',')).join(' '), fill, stroke: stroke || '#C2A86F', 'stroke-width': 2, 'stroke-linejoin': 'round' }, W);
+  el('rect', { x: 0, y: 0, width: 900, height: 640, fill: '#9CCFD8' }, W);
+  for (let i = 0; i < 14; i++) el('path', { d: `M${(i * 97) % 880} ${60 + (i * 53) % 540} q10 -6 20 0 t20 0`, stroke: '#B9E0E6', 'stroke-width': 2, fill: 'none', opacity: .8 }, W);
+  const LAND = '#E9D9B4';
+  poly([[11, 44], [38, 44], [38, 41.2], [36, 41.6], [34, 42], [31, 41.1], [29, 41.2], [27, 41.2], [26, 40.9], [24, 41.2], [22, 42.2], [20, 41.8], [19.4, 41.8], [18, 42.6], [16, 42.6], [15, 42.2], [12, 42.4], [11, 42.6]], LAND);
+  poly([[12, 42.4], [15, 42.2], [16, 41.4], [17.2, 40.5], [18.5, 40.1], [16.6, 39.0], [16.0, 38.0], [15.6, 38.0], [15.9, 39.3], [15.0, 40.2], [14.0, 40.8], [12.5, 41.4], [11, 42.3], [11, 42.6]], LAND);
+  poly([[12.4, 38.1], [15.6, 38.3], [15.1, 36.7], [12.6, 37.6]], LAND);
+  poly([[19.4, 41.8], [20, 41.8], [22, 42.2], [24, 41.2], [26, 40.9], [26.1, 40.3], [24.5, 40.2], [23.7, 40.2], [22.9, 40.6], [22.6, 40.0], [23.3, 39.2], [22.9, 38.6], [24, 38.2], [23.2, 37.9], [22.9, 37.5], [23.2, 36.4], [22.5, 36.4], [21.7, 36.8], [21.1, 37.8], [21.3, 38.4], [20.7, 38.9], [20, 39.7], [19.4, 40.4]], LAND);
+  poly([[26.0, 40.3], [27, 41.2], [29, 41.2], [31, 41.1], [34, 42], [36, 41.6], [38, 41.2], [38, 36.5], [36.2, 36.6], [36, 36.2], [35, 36.6], [34, 36.3], [32.8, 36.1], [31.5, 36.7], [30.6, 36.8], [29.7, 36.2], [28.2, 36.7], [27.3, 37.2], [27.2, 37.9], [26.4, 38.4], [26.8, 39.0], [26.1, 39.5]], LAND);
+  poly([[36, 36.2], [38, 36.5], [38, 29.5], [34.9, 29.5], [34.2, 31.2], [34.5, 31.6], [34.9, 32.4], [35.1, 33.1], [35.5, 33.9], [35.9, 34.7], [35.9, 35.4]], LAND);
+  poly([[11, 33.6], [15.2, 32.4], [19.6, 32.0], [20, 30.5], [25, 31.6], [29, 30.9], [32.3, 31.3], [34.2, 31.2], [34.9, 29.5], [11, 29.5]], LAND);
+  poly([[23.5, 35.6], [26.3, 35.3], [26.2, 35.0], [23.6, 35.2]], LAND);
+  poly([[32.3, 35.1], [34.6, 35.7], [33.9, 35.1], [32.6, 34.7]], LAND);
+  const mt = proj(14.4, 35.9); el('circle', { cx: mt[0], cy: mt[1], r: 5, fill: LAND, stroke: '#C2A86F', 'stroke-width': 2 }, W);
+  const cloud = el('g', { class: 'cloud', opacity: .7 }, W);
+  [[640, 470], [760, 240]].forEach(([x, y]) => { el('ellipse', { cx: x, cy: y, rx: 40, ry: 13, fill: '#fff' }, cloud); el('ellipse', { cx: x + 22, cy: y - 8, rx: 24, ry: 12, fill: '#fff' }, cloud); });
+
+  // 保羅第一次宣教（徒 13–14）
+  const C = { 耶路撒冷: [35.2, 31.8], 安提阿: [36.2, 36.2], 西流基: [35.9, 36.1], 撒拉米: [33.9, 35.2], 帕弗: [32.4, 34.8], 別加: [30.8, 37.0], '彼西底的安提阿': [31.2, 38.3], 以哥念: [32.5, 37.9], 路司得: [32.3, 37.5], 特庇: [33.4, 37.3],
+    以弗所: [27.3, 37.9], 哥林多: [22.9, 37.9], 雅典: [23.7, 38.0], 腓立比: [24.3, 41.0], 羅馬: [12.5, 41.9] };
+  const route = ['耶路撒冷', '安提阿', '西流基', '撒拉米', '帕弗', '別加', '彼西底的安提阿', '以哥念', '路司得', '特庇'];
+  const doneIdx = 4;  // 目前在帕弗
+  const path = route.map(n => proj(...C[n]).join(',')).join(' ');
+  el('polyline', { points: path, fill: 'none', stroke: '#8A6D3B', 'stroke-width': 3, 'stroke-dasharray': '8 8', opacity: .55 }, W);
+  el('polyline', { points: route.slice(0, doneIdx + 1).map(n => proj(...C[n]).join(',')).join(' '), fill: 'none', stroke: '#D9534F', 'stroke-width': 5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, W);
+  // 其他城市（灰）
+  ['以弗所', '哥林多', '雅典', '腓立比', '羅馬'].forEach(n => { const [x, y] = proj(...C[n]); el('circle', { cx: x, cy: y, r: 6, fill: '#fff', stroke: '#9A8C78', 'stroke-width': 2 }, W); el('text', { x, y: y - 11, 'text-anchor': 'middle', 'font-size': 13, 'font-weight': 700, fill: '#7A6A58' }, W).textContent = n; });
+  // 路線上的城市：小建築
+  route.forEach((n, i) => {
+    const [x, y] = proj(...C[n]); const g = el('g', {}, W);
+    if (i === 3 || i === 1) return;   // 安提阿、撒拉米用大圖示
+    const P = iso(x, y - 6, 6);
+    const done = i <= doneIdx;
+    block(g, P, -1, -1, 2, 2, 8, done ? PAL.stone : PAL.rock);
+    roof(g, P, -1, -1, 2, 2, 8, 6, done ? PAL.roof : PAL.rock);
+    if (!done) el('text', { x: x + 12, y: y - 6, 'font-size': 13 }, g).textContent = '🔒';
+  });
+  // 安提阿（差派教會，大一點）
+  { const [x, y] = proj(...C['安提阿']); const g = el('g', {}, W); const P = iso(x - 6, y, 7);
+    block(g, P, -1, -1, 3, 2, 14, PAL.stone); roof(g, P, -1, -1, 3, 2, 14, 8, PAL.teal); flag(g, x + 2, y - 26, '#F2A93B');
+    label(g, x + 4, y + 16, '安提阿', '差派的教會'); }
+  // 目前所在城：帕弗（營地＋營火＋光圈）
+  { const [x, y] = proj(...C['帕弗']); const g = el('g', {}, W);
+    el('circle', { cx: x, cy: y, r: 12, fill: '#F2A93B', class: 'pulse' }, g);
+    const P = iso(x - 18, y - 4, 6);
+    block(g, P, -2, -1, 3, 2, 10, PAL.stone); roof(g, P, -2, -1, 3, 2, 10, 7, PAL.roof);
+    block(g, iso(x + 14, y + 2, 5), 0, 0, 2, 2, 7, PAL.cloth);
+    const f = el('g', { class: 'flame' }, g);
+    el('ellipse', { cx: x + 2, cy: y + 12, rx: 10, ry: 4, fill: '#8A6D3B' }, g);
+    el('path', { d: `M${x + 2},${y + 10} q-8,-8 0,-20 q8,12 0,20z`, fill: '#F2A93B' }, f);
+    el('path', { d: `M${x + 2},${y + 10} q-4,-5 0,-11 q4,6 0,11z`, fill: '#FFE08A' }, f);
+    flag(g, x - 22, y - 18, '#D9534F');
+    label(g, x, y + 20, '📍 帕弗', '漢威牧區・任務 3/4', true); }
+  // 撒拉米（已完成）
+  { const [x, y] = proj(...C['撒拉米']); label(W, x - 30, y - 30, '撒拉米 ✓'); }
+  { const [x, y] = proj(...C['耶路撒冷']); const g = el('g', {}, W); const P = iso(x, y - 4, 7);
+    block(g, P, -1, -1, 2, 2, 16, PAL.gold); roof(g, P, -1, -1, 2, 2, 16, 6, PAL.gold); label(g, x - 50, y - 6, '耶路撒冷', '出發'); }
+  { const [x, y] = proj(...C['別加']); label(W, x - 20, y - 36, '別加 🔒', '下一站'); }
+
+  // ---------- ② 我的領地：等角格子 ----------
+  const L = document.getElementById('land');
+  el('rect', { x: 0, y: 0, width: 900, height: 900, fill: '#BFE3C9' }, L);
+  const T = 46, P = iso(450, 170, T);
+  // 地面格子
+  for (let gx = 0; gx < 9; gx++) for (let gy = 0; gy < 9; gy++) {
+    const a = P(gx, gy), b = P(gx + 1, gy), c = P(gx + 1, gy + 1), d = P(gx, gy + 1);
+    const river = gy === 7 && gx > 1;
+    el('polygon', { points: [a, b, c, d].map(p => p.join(',')).join(' '), fill: river ? '#8FC9E0' : ((gx + gy) % 2 ? '#A6DB9A' : '#9BD38F'), stroke: river ? '#7BB7CF' : '#8CC882', 'stroke-width': 1 }, L);
+  }
+  const G = el('g', {}, L);
+  // 西奈山（後方）
+  { const base = [P(0, 0), P(3, 0), P(3, 3), P(0, 3)], top = P(1.5, 1.5, 150);
+    el('polygon', { points: [base[3], base[2], top].map(p => p.join(',')).join(' '), fill: PAL.rock[1] }, G);
+    el('polygon', { points: [base[1], base[2], top].map(p => p.join(',')).join(' '), fill: PAL.rock[2] }, G);
+    el('polygon', { points: `${top[0] - 18},${top[1] + 26} ${top[0]},${top[1]} ${top[0] + 18},${top[1] + 26} ${top[0]},${top[1] + 18}`, fill: '#FFFFFF' }, G);
+    const [x, y] = P(1.5, 3.2); label(G, x - 30, y - 6, '西奈山 Lv2', '★★☆ 出埃及記'); }
+  // 會幕（中心，院子＋帳幕）
+  { const cx = 4.2, cy = 3;
+    for (let i = 0; i < 5; i++) { block(G, P, cx + i * 0.8, cy, 0.18, 0.18, 22, PAL.stone); block(G, P, cx + i * 0.8, cy + 3, 0.18, 0.18, 22, PAL.stone); }
+    block(G, P, cx + 1.2, cy + 1, 2, 1.2, 34, PAL.cloth); roof(G, P, cx + 1.2, cy + 1, 2, 1.2, 34, 14, PAL.teal);
+    block(G, P, cx + 0.4, cy + 1.3, 0.6, 0.6, 12, PAL.gold);
+    const [x, y] = P(cx + 2.2, cy + 3.6); label(G, x, y + 6, '會幕', '中心建築・第一階段', true); }
+  // 挪亞方舟
+  { block(G, P, 1, 5, 3, 1.2, 22, PAL.wood); roof(G, P, 1, 5, 3, 1.2, 22, 16, PAL.wood);
+    const [x, y] = P(2.5, 6.4); label(G, x + 40, y + 6, '挪亞方舟 Lv1', '★☆☆ 創世記'); }
+  // 先知（NPC）
+  { block(G, P, 7.4, 4.6, 1.2, 1.2, 18, PAL.stone); roof(G, P, 7.4, 4.6, 1.2, 1.2, 18, 10, PAL.roof);
+    const [x, y] = P(7.0, 4.8); person(G, x, y, '#6741D9', '#E9E4F5');
+    label(G, x + 10, y + 14, '以賽亞 🔒', '讀以賽亞書解鎖'); }
+  // 生命樹（伊甸園）
+  { const [x, y] = P(6, 1.4); el('rect', { x: x - 4, y: y - 26, width: 8, height: 26, fill: PAL.wood[1] }, G);
+    el('circle', { cx: x, cy: y - 40, r: 24, fill: PAL.grass[1] }, G); el('circle', { cx: x - 8, cy: y - 48, r: 12, fill: PAL.grass[0] }, G);
+    label(G, x, y + 6, '伊甸園 Lv1'); }
+})();
+</script>
+</body>
+</html>
