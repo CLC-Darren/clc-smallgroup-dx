@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>伊甸與應許之地 — 軟陶等角地形建置模擬器</title>
+<style>
+  :root {
+    --bg-panel: rgba(253, 248, 238, 0.94);
+    --border-warm: #d4b895;
+    --accent-gold: #c98a3c;
+    --accent-green: #588c51;
+    --text-dark: #4a3723;
+    --text-muted: #7c6348;
+  }
+  * { box-sizing: border-box; user-select: none; margin: 0; padding: 0; }
+  body {
+    overflow: hidden;
+    font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+    background: #e2be89;
+    color: var(--text-dark);
+  }
+  #gameCanvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+    cursor: grab;
+  }
+  #gameCanvas:active { cursor: grabbing; }
+
+  /* 頂部控制列 */
+  #topBar {
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    right: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: none;
+    z-index: 20;
+  }
+  .panel-group {
+    pointer-events: auto;
+    background: var(--bg-panel);
+    border: 2px solid var(--border-warm);
+    border-radius: 16px;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 6px 18px rgba(74, 55, 35, 0.16);
+    backdrop-filter: blur(6px);
+  }
+  .title-badge {
+    font-weight: 800;
+    font-size: 15px;
+    color: var(--text-dark);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-right: 6px;
+  }
+  button, .file-btn {
+    background: linear-gradient(180deg, #fffcf6 0%, #f1e3ce 100%);
+    border: 1.5px solid #c7a77e;
+    border-radius: 10px;
+    padding: 6px 11px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-dark);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 2px 0 #b8966b;
+  }
+  button:hover, .file-btn:hover {
+    transform: translateY(-1px);
+    background: linear-gradient(180deg, #ffffff 0%, #f7ebd7 100%);
+  }
+  button:active, .file-btn:active {
+    transform: translateY(1px);
+    box-shadow: 0 0 0 #b8966b;
+  }
+  button.primary {
+    background: linear-gradient(180deg, #76ad6b 0%, #568a4d 100%);
+    border-color: #426e3a;
+    color: #fff;
+    box-shadow: 0 2px 0 #375e30;
+  }
+  button.danger {
+    background: linear-gradient(180deg, #e07a68 0%, #c45643 100%);
+    border-color: #9e3e2d;
+    color: #fff;
+    box-shadow: 0 2px 0 #853223;
+  }
+  input[type="file"] { display: none; }
+
+  /* 底部建築選單列 */
+  #dockBar {
+    position: fixed;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 94vw;
+    background: var(--bg-panel);
+    border: 2px solid var(--border-warm);
+    border-radius: 20px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 8px 24px rgba(74, 55, 35, 0.2);
+    z-index: 20;
+    overflow-x: auto;
+  }
+  .item-card {
+    flex: 0 0 auto;
+    width: 86px;
+    background: #fffaf0;
+    border: 2px solid #dec39f;
+    border-radius: 14px;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .item-card:hover { transform: translateY(-2px); border-color: var(--accent-gold); }
+  .item-card.selected {
+    border-color: var(--accent-green);
+    background: #eef8ec;
+    box-shadow: 0 0 0 3px rgba(88, 140, 81, 0.25);
+  }
+  .item-card canvas {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+  }
+  .item-name {
+    font-size: 11px;
+    font-weight: 700;
+    margin-top: 3px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+  }
+  .size-badge {
+    margin-top: 3px;
+    font-size: 10px;
+    font-weight: 800;
+    background: #ead4b5;
+    color: #5c4228;
+    border-radius: 6px;
+    padding: 1px 6px;
+    cursor: pointer;
+  }
+  .size-badge:hover { background: #d9bc93; }
+
+  /* 選中已放置建築的操作浮動條 */
+  #selectedActionBar {
+    position: fixed;
+    bottom: 128px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-panel);
+    border: 2px solid var(--border-warm);
+    border-radius: 14px;
+    padding: 6px 12px;
+    display: none;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+    z-index: 25;
+  }
+
+  /* JSON 彈窗 */
+  #jsonModal {
+    position: fixed;
+    inset: 0;
+    background: rgba(45, 32, 18, 0.55);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+  }
+  .modal-box {
+    background: #fdf8ee;
+    border: 2px solid var(--border-warm);
+    border-radius: 18px;
+    padding: 18px;
+    width: min(540px, 92vw);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.28);
+  }
+  .modal-box h3 { margin-bottom: 10px; font-size: 16px; }
+  .modal-box textarea {
+    width: 100%;
+    height: 220px;
+    border-radius: 10px;
+    border: 1.5px solid #cfb28c;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 12px;
+    background: #fffdf9;
+    resize: vertical;
+  }
+  .modal-actions {
+    margin-top: 12px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  #toast {
+    position: fixed;
+    top: 74px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(65, 48, 30, 0.9);
+    color: #fff8eb;
+    padding: 7px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s;
+    z-index: 40;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+
+<div id="topBar">
+  <div class="panel-group">
+    <div class="title-badge">🌿 應許園地 <span id="gardenSizeLabel" style="font-size:12px;color:#7c6348;">(10×10)</span></div>
+    <button class="primary" id="btnExpand">➕ 擴張園子 (+2格)</button>
+    <button id="btnDeselect">✋ 瀏覽/拖動建築</button>
+  </div>
+
+  <div class="panel-group">
+    <label class="file-btn" title="上傳 3×3 建築元件表 (自動去背)">
+      🏛️ 上傳元件表
+      <input type="file" id="uploadBuildings" accept="image/*">
+    </label>
+    <label class="file-btn" title="上傳 3×3 人物表：列1男、列2女、列3牧人與小羊">
+      🚶 上傳人物表
+      <input type="file" id="uploadChars" accept="image/*">
+    </label>
+    <label class="file-btn" title="上傳 3×3 裝飾表：樹、花叢、石頭 (大樹當生命樹)">
+      🌳 上傳裝飾表
+      <input type="file" id="uploadProps" accept="image/*">
+    </label>
+    <button id="btnJson">💾 狀態 JSON</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<div id="selectedActionBar">
+  <span id="selectedBuildingLabel" style="font-weight:700;font-size:13px;">已選取建築</span>
+  <span style="font-size:12px;color:#7c6348;">(可直接拖曳移動)</span>
+  <button class="danger" id="btnDeleteBuilding">🗑️ 刪除建築</button>
+  <button id="btnCloseAction">完成</button>
+</div>
+
+<div id="dockBar"></div>
+
+<div id="jsonModal">
+  <div class="modal-box">
+    <h3>📜 園地狀態 JSON（可複製備份或貼上還原）</h3>
+    <textarea id="jsonTextarea"></textarea>
+    <div class="modal-actions">
+      <button id="btnCopyJson">📋 複製 JSON</button>
+      <button class="primary" id="btnLoadJson">📥 載入此 JSON</button>
+      <button id="btnCloseJson">關閉</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/**
+ * 軟陶質感等角地形模擬器
+ * - 無網格線條，所有地形皆以有機平滑曲線、貝茲河道、柔光黏土漸層繪製
+ * - 支援自動色鍵/邊緣背景去背（完美去除洋紅 #FF00FF / 亮粉紅 / 純白 / 綠幕背景並抗鋸齒）
+ */
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// 放大 2 倍的等角格子比例（僅用於邏輯與放置判定，畫面不可見格子）
+const TILE_W = 128;
+const TILE_H = 64;
+
+// 遊戲核心狀態
+const state = {
+  gardenHalf: 5, // 初始 10x10 範圍 (-5 .. +4)
+  camX: 0,
+  camY: 60,
+  zoom: 0.92,
+  selectedCatalogIndex: -1, // -1 代表瀏覽/拖動模式
+  selectedPlacedId: null,
+  draggingPlacedId: null,
+  dragOffsetGrid: { gx: 0, gy: 0 },
+  hoverGrid: null,
+  buildings: [], // { id, catalogId, gx, gy, size }
+  catalog: [],   // { id, name, size, canvas, defaultDrawType }
+  charSprites: null, // 3x3 切分後去背畫布陣列 [row][col]
+  propSprites: null, // 3x3 切分後去背畫布陣列 [0..8]
+  decorations: [],   // 園內隨機散布裝飾 { gx, gy, spriteIdx, scale, flip }
+  agents: [],        // 園內漫步人物與小羊
+  time: 0
+};
+
+// 預設內建軟陶質感建築目錄（未上傳元件表時即可直接遊玩，符合附圖比例與造型）
+const DEFAULT_ITEMS = [
+  { id: 'tabernacle', name: '聖幕會幕', size: 3, type: 'tabernacle' },
+  { id: 'ark_boat',   name: '挪亞方舟', size: 3, type: 'ark_boat' },
+  { id: 'altar',      name: '銅祭壇',   size: 2, type: 'altar' },
+  { id: 'harp',       name: '金色豎琴', size: 1, type: 'harp' },
+  { id: 'gate',       name: '石砌城門', size: 2, type: 'gate' },
+  { id: 'house',      name: '泥磚民居', size: 2, type: 'house' },
+  { id: 'vineyard',   name: '葡萄園架', size: 2, type: 'vineyard' },
+  { id: 'sundial',    name: '石雕日晷', size: 1, type: 'sundial' },
+  { id: 'ark_cov',    name: '施恩約櫃', size: 2, type: 'ark_cov' }
+];
+
+// 工具：提示訊息
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.opacity = '1';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.style.opacity = '0'; }, 2400);
+}
+
+// 座標轉換：邏輯網格 (gx, gy) <-> 世界等角像素 (wx, wy)
+function gridToWorld(gx, gy) {
+  return {
+    wx: (gx - gy) * (TILE_W * 0.5),
+    wy: (gx + gy) * (TILE_H * 0.5)
+  };
+}
+
+function worldToGrid(wx, wy) {
+  const halfW = TILE_W * 0.5;
+  const halfH = TILE_H * 0.5;
+  const gx = (wx / halfW + wy / halfH) * 0.5;
+  const gy = (wy / halfH - wx / halfW) * 0.5;
+  return { gx, gy };
+}
+
+function screenToWorld(sx, sy) {
+  return {
+    wx: (sx - canvas.width * 0.5 - state.camX) / state.zoom,
+    wy: (sy - canvas.height * 0.5 - state.camY) / state.zoom
+  };
+}
+
+// ==========================================
+// 智慧去背與 3x3 元件表切分演算法
+// ==========================================
+function removeBackgroundFromCanvas(srcCanvas) {
+  const w = srcCanvas.width;
+  const h = srcCanvas.height;
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const xctx = c.getContext('2d');
+  xctx.drawImage(srcCanvas, 0, 0);
+  const imgData = xctx.getImageData(0, 0, w, h);
+  const d = imgData.data;
+
+  // 取四個角落像素作為背景基準色
+  const corners = [
+    [0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1],
+    [2, 2], [w - 3, 2], [2, h - 3], [w - 3, h - 3]
+  ];
+  let bgR = 0, bgG = 0, bgB = 0;
+  corners.forEach(([cx, cy]) => {
+    const idx = (cy * w + cx) * 4;
+    bgR += d[idx]; bgG += d[idx + 1]; bgB += d[idx + 2];
+  });
+  bgR /= corners.length;
+  bgG /= corners.length;
+  bgB /= corners.length;
+
+  // 判斷是否為洋紅/桃紅背景 (附圖類型)
+  const isMagentaBg = (bgR > 180 && bgB > 180 && bgG < 110);
+
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i], g = d[i + 1], b = d[i + 2];
+    if (isMagentaBg) {
+      // 洋紅色距離 + 溢色抑制 (De-spill)
+      const magentaStrength = Math.min(r, b) - g;
+      if (magentaStrength > 95 && r > 140 && b > 140) {
+        d[i + 3] = 0;
+      } else if (magentaStrength > 35 && r > 120 && b > 120) {
+        // 半透明抗鋸齒邊緣，同時中和桃紅溢色
+        const alpha = Math.max(0, Math.min(1, 1 - (magentaStrength - 35) / 60));
+        d[i + 3] = Math.round(d[i + 3] * alpha);
+        const neutral = (r + b) * 0.35;
+        d[i] = Math.min(r, neutral + g * 0.4);
+        d[i + 2] = Math.min(b, neutral + g * 0.4);
+      }
+    } else {
+      // 一般純色背景歐氏距離去背
+      const dist = Math.hypot(r - bgR, g - bgG, b - bgB);
+      if (dist < 42) {
+        d[i + 3] = 0;
+      } else if (dist < 68) {
+        d[i + 3] = Math.round(d[i + 3] * ((dist - 42) / 26));
+      }
+    }
+  }
+  xctx.putImageData(imgData, 0, 0);
+  return trimTransparentBounds(c);
+}
+
+// 裁切多餘透明邊界並保留底部對齊基準
+function trimTransparentBounds(c) {
+  const w = c.width, h = c.height;
+  const data = c.getContext('2d').getImageData(0, 0, w, h).data;
+  let minX = w, minY = h, maxX = 0, maxY = 0, found = false;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (data[(y * w + x) * 4 + 3] > 18) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+        found = true;
+      }
+    }
+  }
+  if (!found) return c;
+  const cw = maxX - minX + 1;
+  const ch = maxY - minY + 1;
+  const out = document.createElement('canvas');
+  out.width = cw;
+  out.height = ch;
+  out.getContext('2d').drawImage(c, minX, minY, cw, ch, 0, 0, cw, ch);
+  return out;
+}
+
+function sliceSheet3x3(img) {
+  const cellW = Math.floor(img.width / 3);
+  const cellH = Math.floor(img.height / 3);
+  const cells = [];
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 3; c++) {
+      const sub = document.createElement('canvas');
+      sub.width = cellW;
+      sub.height = cellH;
+      sub.getContext('2d').drawImage(img, c * cellW, r * cellH, cellW, cellH, 0, 0, cellW, cellH);
+      cells.push(removeBackgroundFromCanvas(sub));
+    }
+  }
+  return cells;
+}
+
+// ==========================================
+// 程式繪製軟陶質感預設建築（離線預渲染成去背圖層）
+// ==========================================
+function renderClayIcon(type) {
+  const c = document.createElement('canvas');
+  c.width = 240;
+  c.height = 240;
+  const g = c.getContext('2d');
+  g.translate(120, 155);
+  g.lineJoin = 'round';
+  g.lineCap = 'round';
+
+  // 柔和底部接觸陰影
+  g.fillStyle = 'rgba(72, 52, 28, 0.22)';
+  g.beginPath();
+  g.ellipse(0, 12, 68, 34, 0, 0, Math.PI * 2);
+  g.fill();
+
+  const drawIsoBox = (w, d, h, topCol, leftCol, rightCol) => {
+    // 頂面
+    g.fillStyle = topCol;
+    g.beginPath();
+    g.moveTo(0, -h - d * 0.5);
+    g.lineTo(w, -h);
+    g.lineTo(0, -h + d * 0.5);
+    g.lineTo(-w, -h);
+    g.closePath();
+    g.fill();
+    // 左面
+    g.fillStyle = leftCol;
+    g.beginPath();
+    g.moveTo(-w, -h);
+    g.lineTo(0, -h + d * 0.5);
+    g.lineTo(0, d * 0.5);
+    g.lineTo(-w, 0);
+    g.closePath();
+    g.fill();
+    // 右面
+    g.fillStyle = rightCol;
+    g.beginPath();
+    g.moveTo(0, -h + d * 0.5);
+    g.lineTo(w, -h);
+    g.lineTo(w, 0);
+    g.lineTo(0, d * 0.5);
+    g.closePath();
+    g.fill();
+  };
+
+  if (type === 'tabernacle') {
+    // 聖幕院子與白帳幕
+    drawIsoBox(82, 82, 6, '#f2c6b8', '#d99b8c', '#c48374');
+    // 圍欄柱子
+    g.fillStyle = '#fff5e4';
+    for (let i = -3; i <= 3; i++) {
+      g.fillRect(i * 22 - 3, -24 + Math.abs(i) * 4, 6, 18);
+    }
+    // 帳幕本體
+    g.fillStyle = '#faf3e6';
+    g.beginPath();
+    g.moveTo(-36, -18); g.lineTo(0, -56); g.lineTo(38, -36); g.lineTo(2, 2);
+    g.closePath(); g.fill();
+    // 紫色布幔條紋
+    g.strokeStyle = '#7e528f';
+    g.lineWidth = 6;
+    g.beginPath(); g.moveTo(-16, -37); g.lineTo(18, -18); g.stroke();
+    g.fillStyle = '#6c3f7d';
+    g.beginPath(); g.moveTo(-24, -12); g.lineTo(-8, -32); g.lineTo(4, -22); g.lineTo(-10, -4); g.fill();
+  } else if (type === 'ark_boat') {
+    // 挪亞方舟軟陶船身
+    const hullGrad = g.createLinearGradient(-70, -40, 70, 20);
+    hullGrad.addColorStop(0, '#d68c45');
+    hullGrad.addColorStop(1, '#9e5822');
+    g.fillStyle = hullGrad;
+    g.beginPath();
+    g.moveTo(-78, -28);
+    g.quadraticCurveTo(-50, 28, 12, 22);
+    g.quadraticCurveTo(66, 14, 82, -32);
+    g.lineTo(15, -52);
+    g.closePath();
+    g.fill();
+    // 船艙與紅瓦斜頂
+    drawIsoBox(44, 34, 24, '#e07a5f', '#c97b3c', '#a85f27');
+  } else if (type === 'altar') {
+    drawIsoBox(44, 44, 38, '#e39649', '#c9752c', '#a65a1b');
+    // 四角祭壇角與火焰
+    g.fillStyle = '#f5b056';
+    [[-40, -44], [34, -44], [-4, -64], [-4, -22]].forEach(([x, y]) => {
+      g.beginPath(); g.arc(x, y, 7, 0, Math.PI * 2); g.fill();
+    });
+    const flame = g.createRadialGradient(0, -56, 3, 0, -56, 24);
+    flame.addColorStop(0, '#fff380');
+    flame.addColorStop(0.6, '#ff9824');
+    flame.addColorStop(1, 'rgba(230,60,20,0)');
+    g.fillStyle = flame;
+    g.beginPath(); g.arc(0, -58, 22, 0, Math.PI * 2); g.fill();
+  } else if (type === 'harp') {
+    // 紅地毯與金豎琴
+    drawIsoBox(38, 38, 4, '#c94c4c', '#9e3333', '#822626');
+    g.strokeStyle = '#e6a13c';
+    g.lineWidth = 8;
+    g.beginPath();
+    g.moveTo(-14, -4);
+    g.lineTo(-14, -66);
+    g.bezierCurveTo(10, -78, 24, -45, 16, -12);
+    g.lineTo(-14, -4);
+    g.stroke();
+    g.strokeStyle = '#fff5cc';
+    g.lineWidth = 1.5;
+    for (let x = -8; x <= 10; x += 4) {
+      g.beginPath(); g.moveTo(x, -10); g.lineTo(x, -56 + Math.abs(x)); g.stroke();
+    }
+  } else if (type === 'gate') {
+    drawIsoBox(64, 26, 46, '#f2e2c4', '#dfd0b0', '#c4b18e');
+    drawIsoBox(24, 28, 64, '#f7ebd4', '#e3d3b4', '#c7b491');
+    // 木門拱門
+    g.fillStyle = '#8f5930';
+    g.beginPath();
+    g.arc(-6, -14, 11, Math.PI, 0);
+    g.lineTo(5, 4);
+    g.lineTo(-17, 4);
+    g.closePath();
+    g.fill();
+  } else if (type === 'house') {
+    drawIsoBox(48, 48, 44, '#f5d9a9', '#e3be86', '#c79f65');
+    // 條紋遮陽棚
+    g.fillStyle = '#4f9a94';
+    g.beginPath();
+    g.moveTo(-48, -22); g.lineTo(-22, -10); g.lineTo(-34, 4); g.lineTo(-60, -8);
+    g.closePath(); g.fill();
+  } else if (type === 'vineyard') {
+    for (let row = -1; row <= 1; row++) {
+      const ox = row * 22, oy = row * 11;
+      g.strokeStyle = '#9c6234'; g.lineWidth = 5;
+      g.beginPath(); g.moveTo(-32 + ox, oy); g.lineTo(-32 + ox, -26 + oy); g.stroke();
+      g.beginPath(); g.moveTo(22 + ox, -24 + oy); g.lineTo(22 + ox, -50 + oy); g.stroke();
+      g.strokeStyle = '#78b848'; g.lineWidth = 10;
+      g.beginPath(); g.moveTo(-36 + ox, -26 + oy); g.lineTo(26 + ox, -52 + oy); g.stroke();
+      g.fillStyle = '#7e3ca6';
+      g.beginPath(); g.arc(-6 + ox, -30 + oy, 6, 0, Math.PI * 2); g.fill();
+    }
+  } else if (type === 'sundial') {
+    g.fillStyle = '#dfd0b4';
+    g.beginPath(); g.ellipse(0, -4, 42, 22, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#f5ead6';
+    g.beginPath(); g.ellipse(0, -10, 42, 22, 0, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#e3a63b';
+    g.beginPath(); g.moveTo(-4, -10); g.lineTo(14, -32); g.lineTo(14, -12); g.closePath(); g.fill();
+  } else if (type === 'ark_cov') {
+    drawIsoBox(46, 32, 8, '#e3d5ba', '#cbbba0', '#b09f84');
+    drawIsoBox(36, 24, 28, '#ffd452', '#ebb42c', '#c99118');
+    // 兩位基路伯金翼
+    g.fillStyle = '#ffe580';
+    g.beginPath(); g.arc(-10, -34, 9, 0, Math.PI * 2); g.arc(10, -34, 9, 0, Math.PI * 2); g.fill();
+  }
+  return c;
+}
+
+// 初始化預設目錄
+function initDefaultCatalog() {
+  state.catalog = DEFAULT_ITEMS.map(item => ({
+    id: item.id,
+    name: item.name,
+    size: item.size,
+    canvas: renderClayIcon(item.type)
+  }));
+}
+
+// ==========================================
+// 地形判定與有機軟陶地形繪製（完全無格子感）
+// ==========================================
+function isRiverTile(gx, gy) {
+  // 平滑彎曲河道中心線（僅用於放置阻擋判定，視覺上用連續曲線繪製）
+  const riverCenterX = Math.sin(gy * 0.42) * 1.6 - 0.5;
+  return Math.abs(gx - riverCenterX) < 0.72;
+}
+
+function isInsideGarden(gx, gy) {
+  const h = state.gardenHalf;
+  return gx >= -h && gx < h && gy >= -h && gy < h;
+}
+
+// 繪製整個平滑軟陶世界（沙漠沙丘 -> 紅岩台地 -> 圓潤綠洲黏土台階 -> 連續彎曲流動河道）
+function drawOrganicWorld(t) {
+  // 1. 鋪滿畫面的平滑起伏曠野沙漠（漸層 + 柔和沙丘波浪 + 柔光陰影）
+  const desertGrad = ctx.createLinearGradient(-1600, -1000, 1600, 1100);
+  desertGrad.addColorStop(0, '#f3d49b');
+  desertGrad.addColorStop(0.5, '#e7be82');
+  desertGrad.addColorStop(1, '#d6a363');
+  ctx.fillStyle = desertGrad;
+  ctx.fillRect(-3500, -2500, 7000, 5000);
+
+  // 柔和沙丘光影曲線（完全有機無方格）
+  for (let i = -6; i <= 6; i++) {
+    const baseY = i * 240;
+    const duneGrad = ctx.createLinearGradient(0, baseY - 70, 0, baseY + 110);
+    duneGrad.addColorStop(0, 'rgba(255, 241, 212, 0.42)');
+    duneGrad.addColorStop(0.45, 'rgba(235, 192, 132, 0.12)');
+    duneGrad.addColorStop(1, 'rgba(176, 121, 62, 0.24)');
+    ctx.fillStyle = duneGrad;
+    ctx.beginPath();
+    ctx.moveTo(-3200, baseY + 200);
+    for (let x = -3200; x <= 3200; x += 320) {
+      const y = baseY + Math.sin(x * 0.0022 + i * 1.4) * 65 + Math.cos(x * 0.0011 - i) * 35;
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(3200, baseY + 260);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // 2. 圓潤紅岩台地（散布在沙漠周邊，軟陶圓角與頂部高光）
+  const mesas = [
+    { x: -920, y: -340, rx: 190, ry: 95, h: 46 },
+    { x: 960,  y: -260, rx: 220, ry: 108, h: 54 },
+    { x: -840, y: 460,  rx: 170, ry: 85, h: 40 },
+    { x: 890,  y: 490,  rx: 205, ry: 100, h: 48 }
+  ];
+  mesas.forEach(m => {
+    // 接地柔影
+    ctx.fillStyle = 'rgba(138, 86, 40, 0.25)';
+    ctx.beginPath();
+    ctx.ellipse(m.x + 12, m.y + 16, m.rx * 1.05, m.ry * 1.06, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 圓潤岩壁厚層
+    const cliffGrad = ctx.createLinearGradient(m.x - m.rx, m.y, m.x + m.rx, m.y);
+    cliffGrad.addColorStop(0, '#d47c57');
+    cliffGrad.addColorStop(0.5, '#be623e');
+    cliffGrad.addColorStop(1, '#9c4829');
+    ctx.fillStyle = cliffGrad;
+    ctx.beginPath();
+    ctx.ellipse(m.x, m.y, m.rx, m.ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 平滑台地頂面
+    const topGrad = ctx.createRadialGradient(m.x - m.rx * 0.25, m.y - m.h - m.ry * 0.2, 10, m.x, m.y - m.h, m.rx);
+    topGrad.addColorStop(0, '#f2a97e');
+    topGrad.addColorStop(1, '#d9845b');
+    ctx.fillStyle = topGrad;
+    ctx.beginPath();
+    ctx.ellipse(m.x, m.y - m.h, m.rx * 0.94, m.ry * 0.92, 0, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 3. 園子有機綠洲（平滑波浪邊緣 + 軟陶厚度懸崖 + 柔和頂光漸層，絕無方格鋸齒）
+  const h = state.gardenHalf;
+  const gardenPath = buildOrganicGardenPath(h, 0);
+  const cliffPath = buildOrganicGardenPath(h, 30);
+
+  // 綠洲底部沙地投影
+  ctx.save();
+  ctx.translate(0, 38);
+  ctx.fillStyle = 'rgba(128, 84, 38, 0.28)';
+  ctx.fill(gardenPath);
+  ctx.restore();
+
+  // 軟陶圓潤泥土/青苔厚懸崖（漸層明暗）
+  const clayCliffGrad = ctx.createLinearGradient(-h * TILE_W, 0, h * TILE_W, 0);
+  clayCliffGrad.addColorStop(0, '#b58a54');
+  clayCliffGrad.addColorStop(0.45, '#966d3c');
+  clayCliffGrad.addColorStop(1, '#755128');
+  ctx.fillStyle = clayCliffGrad;
+  ctx.fill(cliffPath);
+
+  // 綠洲表層草地（軟陶絲絨質感漸層）
+  const grassGrad = ctx.createRadialGradient(-120, -140, 40, 0, 40, h * TILE_W * 1.15);
+  grassGrad.addColorStop(0, '#a8db72');
+  grassGrad.addColorStop(0.55, '#82bf56');
+  grassGrad.addColorStop(1, '#659e40');
+  ctx.fillStyle = grassGrad;
+  ctx.fill(gardenPath);
+
+  // 邊緣高光軟陶倒角（讓平台邊緣像手捏軟陶一樣圓潤立體）
+  ctx.strokeStyle = 'rgba(218, 247, 173, 0.55)';
+  ctx.lineWidth = 7;
+  ctx.stroke(gardenPath);
+
+  // 園內少數平滑小土丘高地（平坦區多、懸崖少）
+  drawSmoothMound(-h * 0.48, -h * 0.42, 1.55);
+  drawSmoothMound(h * 0.45, h * 0.38, 1.35);
+
+  // 4. 連續平滑彎曲的河道（帶淺水邊、柔和反光與流動波光，無任何格紋）
+  drawSmoothRiver(h, t);
+}
+
+// 建構園子有機波浪多邊形 Path2D（圓潤不規則曲線，無方格角）
+function buildOrganicGardenPath(halfTiles, offsetY) {
+  const path = new Path2D();
+  const pts = [];
+  const steps = 64;
+  for (let i = 0; i < steps; i++) {
+    const angle = (i / steps) * Math.PI * 2;
+    // 用超橢圓 (Superellipse) + 柔和正弦有機起伏，讓等角菱形變成圓潤軟陶島嶼
+    const cosA = Math.cos(angle);
+    const sinA = Math.sin(angle);
+    const n = 2.6; // 圓潤方菱度
+    const rx = Math.sign(cosA) * Math.pow(Math.abs(cosA), 2 / n);
+    const ry = Math.sign(sinA) * Math.pow(Math.abs(sinA), 2 / n);
+
+    const organicWobble = 1 + 0.055 * Math.sin(angle * 5 + 0.8) + 0.035 * Math.cos(angle * 3 - 0.4);
+    const gx = rx * (halfTiles + 0.45) * organicWobble;
+    const gy = ry * (halfTiles + 0.45) * organicWobble;
+    const { wx, wy } = gridToWorld(gx, gy);
+    pts.push({ x: wx, y: wy + offsetY });
+  }
+
+  for (let i = 0; i < pts.length; i++) {
+    const p0 = pts[(i - 1 + pts.length) % pts.length];
+    const p1 = pts[i];
+    const p2 = pts[(i + 1) % pts.length];
+    const mid1 = { x: (p0.x + p1.x) * 0.5, y: (p0.y + p1.y) * 0.5 };
+    const mid2 = { x: (p1.x + p2.x) * 0.5, y: (p1.y + p2.y) * 0.5 };
+    if (i === 0) path.moveTo(mid1.x, mid1.y);
+    path.quadraticCurveTo(p1.x, p1.y, mid2.x, mid2.y);
+  }
+  path.closePath();
+  return path;
+}
+
+// 繪製柔和低矮軟陶小土丘
+function drawSmoothMound(gx, gy, radiusTiles) {
+  const { wx, wy } = gridToWorld(gx, gy);
+  const rx = radiusTiles * TILE_W * 0.65;
+  const ry = radiusTiles * TILE_H * 0.65;
+
+  // 柔和陰影
+  ctx.fillStyle = 'rgba(78, 122, 46, 0.25)';
+  ctx.beginPath();
+  ctx.ellipse(wx, wy + 7, rx * 1.04, ry * 1.04, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const moundGrad = ctx.createRadialGradient(wx - rx * 0.25, wy - ry * 0.35, 6, wx, wy, rx);
+  moundGrad.addColorStop(0, '#b5e67e');
+  moundGrad.addColorStop(0.7, '#8bc95d');
+  moundGrad.addColorStop(1, '#73b048');
+  ctx.fillStyle = moundGrad;
+  ctx.beginPath();
+  ctx.ellipse(wx, wy - 4, rx, ry, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// 繪製連續彎曲流動河流
+function drawSmoothRiver(halfTiles, t) {
+  const riverPts = [];
+  const startGy = -halfTiles - 0.15;
+  const endGy = halfTiles + 0.15;
+  const samples = 28;
+  for (let i = 0; i <= samples; i++) {
+    const gy = startGy + (endGy - startGy) * (i / samples);
+    const gx = Math.sin(gy * 0.42) * 1.6 - 0.5;
+    riverPts.push(gridToWorld(gx, gy));
+  }
+
+  const strokeRiverCurve = (width, style) => {
+    ctx.strokeStyle = style;
+    ctx.lineWidth = width;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(riverPts[0].wx, riverPts[0].wy);
+    for (let i = 1; i < riverPts.length - 1; i++) {
+      const mx = (riverPts[i].wx + riverPts[i + 1].wx) * 0.5;
+      const my = (riverPts[i].wy + riverPts[i + 1].wy) * 0.5;
+      ctx.quadraticCurveTo(riverPts[i].wx, riverPts[i].wy, mx, my);
+    }
+    const last = riverPts[riverPts.length - 1];
+    ctx.lineTo(last.wx, last.wy);
+    ctx.stroke();
+  };
+
+  // 1. 淺水濕潤泥沙岸邊
+  strokeRiverCurve(TILE_W * 0.92, 'rgba(214, 198, 146, 0.72)');
+  // 2. 淺水清澈綠松色邊緣
+  strokeRiverCurve(TILE_W * 0.74, '#79d2d6');
+  // 3. 主河道湛藍水體
+  strokeRiverCurve(TILE_W * 0.54, '#4ab3d9');
+
+  // 4. 慢慢流動的柔和波光（無方格，純順流亮線）
+  ctx.save();
+  ctx.setLineDash([28, 42]);
+  ctx.lineDashOffset = -t * 26;
+  strokeRiverCurve(TILE_W * 0.22, 'rgba(235, 252, 255, 0.46)');
+  ctx.lineDashOffset = -t * 18 + 30;
+  strokeRiverCurve(TILE_W * 0.10, 'rgba(255, 255, 255, 0.65)');
+  ctx.restore();
+}
+
+// ==========================================
+// 園內裝飾（樹木、花叢、石頭 + 中央生命樹）與漫步人物
+// ==========================================
+function regenerateDecorations() {
+  state.decorations = [];
+  const h = state.gardenHalf;
+  // 中央生命樹放在高地微偏河畔位置
+  state.decorations.push({ gx: -3.2, gy: -2.6, spriteIdx: 0, isTreeOfLife: true, scale: 1.45, flip: false });
+
+  const count = Math.floor(h * 4.5);
+  for (let i = 0; i < count; i++) {
+    const gx = (Math.random() * 2 - 1) * (h - 0.8);
+    const gy = (Math.random() * 2 - 1) * (h - 0.8);
+    if (isRiverTile(gx, gy)) continue;
+    if (Math.hypot(gx + 3.2, gy + 2.6) < 2.2) continue;
+    state.decorations.push({
+      gx,
+      gy,
+      spriteIdx: 1 + (i % 8),
+      isTreeOfLife: false,
+      scale: 0.75 + Math.random() * 0.35,
+      flip: Math.random() > 0.5
+    });
+  }
+}
+
+function initAgents() {
+  // 0: 男生, 1: 女生, 2: 老牧人, 3: 小羊
+  state.agents = [
+    { role: 0, gx: 1.5, gy: 1.5, tx: 3.2, ty: 2.0, wait: 0, phase: 0 },
+    { role: 1, gx: 2.4, gy: -1.8, tx: 1.2, ty: -3.0, wait: 0.5, phase: 1.7 },
+    { role: 2, gx: -2.5, gy: 2.2, tx: -3.6, ty: 1.0, wait: 0, phase: 3.1 },
+    { role: 3, gx: -2.9, gy: 2.6, tx: -3.2, ty: 1.4, wait: 0.2, phase: 2.2 },
+    { role: 3, gx: -2.1, gy: 2.8, tx: -2.8, ty: 1.8, wait: 0.8, phase: 4.0 }
+  ];
+}
+
+function updateAgents(dt) {
+  const h = state.gardenHalf - 0.8;
+  state.agents.forEach(ag => {
+    ag.phase += dt * 7.5;
+    if (ag.wait > 0) {
+      ag.wait -= dt;
+      return;
+    }
+    const dx = ag.tx - ag.gx;
+    const dy = ag.ty - ag.gy;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 0.12) {
+      ag.wait = 1.0 + Math.random() * 2.0;
+      for (let tries = 0; tries < 10; tries++) {
+        const nx = (Math.random() * 2 - 1) * h;
+        const ny = (Math.random() * 2 - 1) * h;
+        if (!isRiverTile(nx, ny)) {
+          ag.tx = nx;
+          ag.ty = ny;
+          break;
+        }
+      }
+    } else {
+      const speed = ag.role === 3 ? 0.65 : 0.85;
+      ag.gx += (dx / dist) * speed * dt;
+      ag.gy += (dy / dist) * speed * dt;
+    }
+  });
+}
+
+// ==========================================
+// 建築放置判定（格子只用於內部邏輯計算，不畫網格）
+// ==========================================
+function canPlaceAt(gx, gy, size, ignoreId = null) {
+  const startX = Math.floor(gx);
+  const startY = Math.floor(gy);
+  for (let x = startX; x < startX + size; x++) {
+    for (let y = startY; y < startY + size; y++) {
+      if (!isInsideGarden(x, y)) return false;
+      if (isRiverTile(x + 0.5, y + 0.5)) return false;
+      // 檢查是否與現有建築重疊
+      for (const b of state.buildings) {
+        if (b.id === ignoreId) continue;
+        if (x < b.gx + b.size && x + 1 > b.gx && y < b.gy + b.size && y + 1 > b.gy) {
+          return false;
+        }
+      }
+    }
+  }
+  return true;
+}
+
+// ==========================================
+// 繪製深度排序實體（建築、裝飾樹叢、行走人物與小羊）
+// ==========================================
+function drawEntities() {
+  const renderList = [];
+
+  // 1. 裝飾物（生命樹與花草石頭）
+  state.decorations.forEach(dec => {
+    const { wx, wy } = gridToWorld(dec.gx, dec.gy);
+    renderList.push({
+      depth: dec.gx + dec.gy,
+      draw: () => drawDecoration(dec, wx, wy)
+    });
+  });
+
+  // 2. 已放置建築
+  state.buildings.forEach(b => {
+    const cat = state.catalog.find(c => c.id === b.catalogId);
+    if (!cat) return;
+    const centerGx = b.gx + b.size * 0.5;
+    const centerGy = b.gy + b.size * 0.5;
+    const { wx, wy } = gridToWorld(centerGx, centerGy);
+    renderList.push({
+      depth: centerGx + centerGy,
+      draw: () => drawPlacedBuilding(b, cat, wx, wy, b.id === state.selectedPlacedId)
+    });
+  });
+
+  // 3. 園內人物與小羊
+  state.agents.forEach(ag => {
+    const { wx, wy } = gridToWorld(ag.gx, ag.gy);
+    renderList.push({
+      depth: ag.gx + ag.gy,
+      draw: () => drawAgent(ag, wx, wy)
+    });
+  });
+
+  // 等角深度排序（由遠到近）
+  renderList.sort((a, b) => a.depth - b.depth);
+  renderList.forEach(item => item.draw());
+
+  // 4. 放置預覽幽靈（僅在選擇建築工具時顯示柔和底座光暈，不畫方格網）
+  if (state.selectedCatalogIndex >= 0 && state.hoverGrid) {
+    const cat = state.catalog[state.selectedCatalogIndex];
+    const gx = Math.floor(state.hoverGrid.gx - cat.size * 0.5 + 0.5);
+    const gy = Math.floor(state.hoverGrid.gy - cat.size * 0.5 + 0.5);
+    const ok = canPlaceAt(gx, gy, cat.size);
+    const { wx, wy } = gridToWorld(gx + cat.size * 0.5, gy + cat.size * 0.5);
+
+    ctx.save();
+    // 柔和圓潤底座光暈指示可否放置
+    ctx.fillStyle = ok ? 'rgba(118, 214, 102, 0.42)' : 'rgba(235, 92, 74, 0.45)';
+    ctx.beginPath();
+    ctx.ellipse(wx, wy, cat.size * TILE_W * 0.46, cat.size * TILE_H * 0.46, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.globalAlpha = 0.78;
+    drawScaledSpriteBottomCenter(cat.canvas, wx, wy + cat.size * 6, cat.size * TILE_W * 0.92);
+    ctx.restore();
+  }
+}
+
+function drawScaledSpriteBottomCenter(imgCanvas, wx, wy, targetWidth) {
+  const ratio = imgCanvas.height / imgCanvas.width;
+  const dw = targetWidth;
+  const dh = dw * ratio;
+  ctx.drawImage(imgCanvas, wx - dw * 0.5, wy - dh * 0.86, dw, dh);
+}
+
+function drawPlacedBuilding(b, cat, wx, wy, isSelected) {
+  if (isSelected) {
+    // 選中時腳下柔和金色光環
+    ctx.fillStyle = 'rgba(255, 224, 115, 0.48)';
+    ctx.beginPath();
+    ctx.ellipse(wx, wy, b.size * TILE_W * 0.48, b.size * TILE_H * 0.48, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#ffcf4d';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+  // 元件依佔地自動縮放（2x2 小房子約 2 格寬）
+  const targetW = b.size * TILE_W * 0.94;
+  drawScaledSpriteBottomCenter(cat.canvas, wx, wy + b.size * 6, targetW);
+}
+
+function drawDecoration(dec, wx, wy) {
+  if (state.propSprites && state.propSprites[dec.spriteIdx]) {
+    const spr = state.propSprites[dec.spriteIdx];
+    const baseW = (dec.isTreeOfLife ? TILE_W * 1.65 : TILE_W * 0.75) * dec.scale;
+    ctx.save();
+    ctx.translate(wx, wy);
+    if (dec.flip) ctx.scale(-1, 1);
+    drawScaledSpriteBottomCenter(spr, 0, 6, baseW);
+    ctx.restore();
+    return;
+  }
+
+  // 預設軟陶質感裝飾樹 / 生命樹 / 花叢
+  ctx.save();
+  ctx.translate(wx, wy);
+  const s = dec.scale;
+  ctx.fillStyle = 'rgba(65, 95, 42, 0.22)';
+  ctx.beginPath();
+  ctx.ellipse(0, 4, 24 * s, 12 * s, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (dec.isTreeOfLife || dec.spriteIdx % 3 === 1) {
+    // 軟陶樹幹
+    ctx.fillStyle = '#9c6336';
+    ctx.beginPath();
+    ctx.roundRect(-6 * s, -34 * s, 12 * s, 36 * s, 5 * s);
+    ctx.fill();
+    // 圓潤蓬鬆樹冠
+    const grad = ctx.createRadialGradient(-10 * s, -54 * s, 4, 0, -44 * s, 34 * s);
+    grad.addColorStop(0, dec.isTreeOfLife ? '#ffe875' : '#bce87d');
+    grad.addColorStop(0.6, dec.isTreeOfLife ? '#7bc950' : '#73b548');
+    grad.addColorStop(1, '#528c32');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(0, -46 * s, 28 * s, 0, Math.PI * 2);
+    ctx.arc(-16 * s, -36 * s, 18 * s, 0, Math.PI * 2);
+    ctx.arc(16 * s, -36 * s, 18 * s, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (dec.spriteIdx % 3 === 2) {
+    // 軟陶花叢
+    ctx.fillStyle = '#6db344';
+    ctx.beginPath();
+    ctx.arc(0, -8 * s, 15 * s, 0, Math.PI * 2);
+    ctx.fill();
+    ['#ff8fa3', '#ffd166', '#ffffff'].forEach((col, idx) => {
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      ctx.arc((idx - 1) * 7 * s, -11 * s, 3.5 * s, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  } else {
+    // 圓潤鵝卵石
+    ctx.fillStyle = '#cfc4b2';
+    ctx.beginPath();
+    ctx.ellipse(-4 * s, -5 * s, 13 * s, 8 * s, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#b5a895';
+    ctx.beginPath();
+    ctx.ellipse(8 * s, -3 * s, 9 * s, 6 * s, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawAgent(ag, wx, wy) {
+  const isMoving = ag.wait <= 0;
+  const bounce = isMoving ? Math.abs(Math.sin(ag.phase)) * 6 : 0;
+
+  // 計算屏幕移動方向決定圖格與左右翻轉
+  const moveWorld = gridToWorld(ag.tx - ag.gx, ag.ty - ag.gy);
+  const movingLeft = moveWorld.wx < -0.5;
+  const movingUpRight = moveWorld.wy < -0.5;
+
+  // 腳底柔和投影
+  ctx.fillStyle = 'rgba(58, 78, 36, 0.26)';
+  ctx.beginPath();
+  ctx.ellipse(wx, wy + 2, 14, 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 若已上傳 3x3 人物表：
+  // 第一列(0..2): 男生往右下走(0)、往右上走(1)、站立(2)
+  // 第二列(3..5): 女生往右下走(3)、往右上走(4)、站立(5)
+  // 第三列(6..8): 老牧人往右下走(6)、往右上走(7)、小羊(8)
+  if (state.charSprites) {
+    let idx = 0;
+    if (ag.role === 3) {
+      idx = 8; // 小羊
+    } else {
+      const rowOffset = ag.role * 3;
+      if (!isMoving && ag.role < 2) {
+        idx = rowOffset + 2; // 男生/女生站立格
+      } else {
+        idx = rowOffset + (movingUpRight ? 1 : 0);
+      }
+    }
+    const spr = state.charSprites[idx];
+    if (spr) {
+      ctx.save();
+      ctx.translate(wx, wy - bounce);
+      if (movingLeft) ctx.scale(-1, 1);
+      const targetW = ag.role === 3 ? 42 : 54;
+      drawScaledSpriteBottomCenter(spr, 0, 4, targetW);
+      ctx.restore();
+      return;
+    }
+  }
+
+  // 未上傳人物表時的軟陶造型小人 / 小羊
+  ctx.save();
+  ctx.translate(wx, wy - bounce);
+  if (movingLeft) ctx.scale(-1, 1);
+  if (ag.role === 3) {
+    // 軟陶小羊
+    ctx.fillStyle = '#fffaf0';
+    ctx.beginPath();
+    ctx.ellipse(0, -11, 13, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#e0c3a6';
+    ctx.beginPath();
+    ctx.arc(10, -14, 5.5, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    const robeColors = ['#5b8fb9', '#d97b84', '#b08968'];
+    ctx.fillStyle = robeColors[ag.role] || '#5b8fb9';
+    ctx.beginPath();
+    ctx.roundRect(-8, -26, 16, 24, 7);
+    ctx.fill();
+    ctx.fillStyle = '#f5cba7';
+    ctx.beginPath();
+    ctx.arc(0, -33, 8, 0, Math.PI * 2);
+    ctx.fill();
+    // 頭巾/頭髮
+    ctx.fillStyle = ag.role === 2 ? '#e8e8e8' : '#5c3d28';
+    ctx.beginPath();
+    ctx.arc(0, -35, 8.2, Math.PI, 0);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ==========================================
+// UI 建築目錄列與互動綁定
+// ==========================================
+function rebuildDockBar() {
+  const dock = document.getElementById('dockBar');
+  dock.innerHTML = '';
+
+  state.catalog.forEach((item, index) => {
+    const card = document.createElement('div');
+    card.className = 'item-card' + (state.selectedCatalogIndex === index ? ' selected' : '');
+    card.onclick = () => {
+      state.selectedCatalogIndex = (state.selectedCatalogIndex === index) ? -1 : index;
+      state.selectedPlacedId = null;
+      updateActionBar();
+      rebuildDockBar();
+    };
+
+    const thumb = document.createElement('canvas');
+    thumb.width = 64;
+    thumb.height = 64;
+    const tctx = thumb.getContext('2d');
+    const scale = Math.min(58 / item.canvas.width, 58 / item.canvas.height);
+    const dw = item.canvas.width * scale;
+    const dh = item.canvas.height * scale;
+    tctx.drawImage(item.canvas, (64 - dw) * 0.5, (64 - dh) * 0.5, dw, dh);
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'item-name';
+    nameEl.textContent = item.name;
+
+    const sizeBadge = document.createElement('div');
+    sizeBadge.className = 'size-badge';
+    sizeBadge.title = '點擊切換佔地大小 (1×1 / 2×2 / 3×3)';
+    sizeBadge.textContent = `${item.size}×${item.size}`;
+    sizeBadge.onclick = (e) => {
+      e.stopPropagation();
+      item.size = item.size === 1 ? 2 : (item.size === 2 ? 3 : 1);
+      sizeBadge.textContent = `${item.size}×${item.size}`;
+      showToast(`「${item.name}」佔地已設為 ${item.size}×${item.size} 格`);
+    };
+
+    card.appendChild(thumb);
+    card.appendChild(nameEl);
+    card.appendChild(sizeBadge);
+    dock.appendChild(card);
+  });
+}
+
+function updateActionBar() {
+  const bar = document.getElementById('selectedActionBar');
+  if (!state.selectedPlacedId) {
+    bar.style.display = 'none';
+    return;
+  }
+  const b = state.buildings.find(x => x.id === state.selectedPlacedId);
+  if (!b) {
+    bar.style.display = 'none';
+    return;
+  }
+  const cat = state.catalog.find(c => c.id === b.catalogId);
+  document.getElementById('selectedBuildingLabel').textContent = `已選取：${cat ? cat.name : '建築'} (${b.size}×${b.size})`;
+  bar.style.display = 'flex';
+}
+
+// 檔案上傳處理
+document.getElementById('uploadBuildings').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const img = new Image();
+  img.onload = () => {
+    const cells = sliceSheet3x3(img);
+    const defaultSizes = [3, 3, 2, 1, 2, 2, 2, 1, 2];
+    const defaultNames = ['聖幕會幕', '挪亞方舟', '銅祭壇', '金色豎琴', '石砌城門', '泥磚民居', '葡萄園架', '石雕日晷', '施恩約櫃'];
+    state.catalog = cells.map((c, i) => ({
+      id: 'custom_' + i,
+      name: defaultNames[i] || `元件 ${i + 1}`,
+      size: defaultSizes[i] || 2,
+      canvas: c
+    }));
+    state.selectedCatalogIndex = 0;
+    rebuildDockBar();
+    showToast('✅ 已載入 3×3 建築元件表並完成去背！點擊下方標籤可切換 1×1/2×2/3×3');
+  };
+  img.src = URL.createObjectURL(file);
+  e.target.value = '';
+});
+
+document.getElementById('uploadChars').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const img = new Image();
+  img.onload = () => {
+    state.charSprites = sliceSheet3x3(img);
+    showToast('✅ 已載入 3×3 人物與小羊圖表並完成去背！');
+  };
+  img.src = URL.createObjectURL(file);
+  e.target.value = '';
+});
+
+document.getElementById('uploadProps').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const img = new Image();
+  img.onload = () => {
+    state.propSprites = sliceSheet3x3(img);
+    regenerateDecorations();
+    showToast('✅ 已載入 3×3 裝飾表，大樹已設為中央生命樹！');
+  };
+  img.src = URL.createObjectURL(file);
+  e.target.value = '';
+});
+
+// 擴張園子
+document.getElementById('btnExpand').addEventListener('click', () => {
+  if (state.gardenHalf >= 14) {
+    showToast('園子已經擴張到最大範圍囉！');
+    return;
+  }
+  state.gardenHalf += 1;
+  const side = state.gardenHalf * 2;
+  document.getElementById('gardenSizeLabel').textContent = `(${side}×${side})`;
+  regenerateDecorations();
+  showToast(`🌿 園子已擴張至 ${side}×${side} 格！`);
+});
+
+document.getElementById('btnDeselect').addEventListener('click', () => {
+  state.selectedCatalogIndex = -1;
+  state.selectedPlacedId = null;
+  updateActionBar();
+  rebuildDockBar();
+  showToast('已切換至瀏覽模式：可拖曳畫面或點選已放置的建築移動/刪除');
+});
+
+document.getElementById('btnDeleteBuilding').addEventListener('click', () => {
+  if (!state.selectedPlacedId) return;
+  state.buildings = state.buildings.filter(b => b.id !== state.selectedPlacedId);
+  state.selectedPlacedId = null;
+  updateActionBar();
+  showToast('🗑️ 已刪除該建築');
+});
+
+document.getElementById('btnCloseAction').addEventListener('click', () => {
+  state.selectedPlacedId = null;
+  updateActionBar();
+});
+
+// 狀態 JSON 匯出與還原
+document.getElementById('btnJson').addEventListener('click', () => {
+  const exportData = {
+    gardenHalf: state.gardenHalf,
+    buildings: state.buildings,
+    catalogSizes: state.catalog.map(c => ({ id: c.id, name: c.name, size: c.size }))
+  };
+  document.getElementById('jsonTextarea').value = JSON.stringify(exportData, null, 2);
+  document.getElementById('jsonModal').style.display = 'flex';
+});
+
+document.getElementById('btnCopyJson').addEventListener('click', () => {
+  const ta = document.getElementById('jsonTextarea');
+  ta.select();
+  navigator.clipboard.writeText(ta.value);
+  showToast('📋 已複製狀態 JSON 到剪貼簿！');
+});
+
+document.getElementById('btnLoadJson').addEventListener('click', () => {
+  try {
+    const parsed = JSON.parse(document.getElementById('jsonTextarea').value);
+    if (typeof parsed.gardenHalf === 'number') {
+      state.gardenHalf = parsed.gardenHalf;
+      const side = state.gardenHalf * 2;
+      document.getElementById('gardenSizeLabel').textContent = `(${side}×${side})`;
+    }
+    if (Array.isArray(parsed.buildings)) {
+      state.buildings = parsed.buildings;
+    }
+    if (Array.isArray(parsed.catalogSizes)) {
+      parsed.catalogSizes.forEach(cs => {
+        const found = state.catalog.find(c => c.id === cs.id);
+        if (found && cs.size) found.size = cs.size;
+      });
+      rebuildDockBar();
+    }
+    document.getElementById('jsonModal').style.display = 'none';
+    showToast('✅ 已成功還原園地狀態！');
+  } catch (err) {
+    showToast('❌ JSON 格式錯誤，請檢查內容');
+  }
+});
+
+document.getElementById('btnCloseJson').addEventListener('click', () => {
+  document.getElementById('jsonModal').style.display = 'none';
+});
+
+// ==========================================
+// 滑鼠 / 觸控操作（拖曳地圖、放置建築、拖動已放置建築）
+// ==========================================
+let isPanning = false;
+let panStart = { x: 0, y: 0 };
+let pointerDownPos = { x: 0, y: 0 };
+
+function hitTestPlacedBuilding(gx, gy) {
+  // 從最前景（depth 最大）開始檢測點擊
+  const sorted = [...state.buildings].sort((a, b) => (b.gx + b.gy) - (a.gx + a.gy));
+  for (const b of sorted) {
+    if (gx >= b.gx - 0.15 && gx <= b.gx + b.size + 0.15 &&
+        gy >= b.gy - 0.15 && gy <= b.gy + b.size + 0.15) {
+      return b;
+    }
+  }
+  return null;
+}
+
+canvas.addEventListener('mousedown', (e) => {
+  pointerDownPos = { x: e.clientX, y: e.clientY };
+  const world = screenToWorld(e.clientX, e.clientY);
+  const grid = worldToGrid(world.wx, world.wy);
+
+  // 若在瀏覽/拖動模式下點中已放置建築，準備拖動它
+  if (state.selectedCatalogIndex === -1) {
+    const hit = hitTestPlacedBuilding(grid.gx, grid.gy);
+    if (hit) {
+      state.selectedPlacedId = hit.id;
+      state.draggingPlacedId = hit.id;
+      state.dragOffsetGrid = { gx: grid.gx - hit.gx, gy: grid.gy - hit.gy };
+      updateActionBar();
+      return;
+    }
+  }
+
+  isPanning = true;
+  panStart = { x: e.clientX - state.camX, y: e.clientY - state.camY };
+});
+
+window.addEventListener('mousemove', (e) => {
+  const world = screenToWorld(e.clientX, e.clientY);
+  const grid = worldToGrid(world.wx, world.wy);
+  state.hoverGrid = grid;
+
+  if (state.draggingPlacedId) {
+    const b = state.buildings.find(x => x.id === state.draggingPlacedId);
+    if (b) {
+      const targetGx = Math.round(grid.gx - state.dragOffsetGrid.gx);
+      const targetGy = Math.round(grid.gy - state.dragOffsetGrid.gy);
+      if (canPlaceAt(targetGx, targetGy, b.size, b.id)) {
+        b.gx = targetGx;
+        b.gy = targetGy;
+      }
+    }
+    return;
+  }
+
+  if (isPanning) {
+    state.camX = e.clientX - panStart.x;
+    state.camY = e.clientY - panStart.y;
+  }
+});
+
+window.addEventListener('mouseup', (e) => {
+  const movedDist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+  state.draggingPlacedId = null;
+  isPanning = false;
+
+  // 若為原地點擊（非拖曳畫面）
+  if (movedDist < 6) {
+    const world = screenToWorld(e.clientX, e.clientY);
+    const grid = worldToGrid(world.wx, world.wy);
+
+    if (state.selectedCatalogIndex >= 0) {
+      const cat = state.catalog[state.selectedCatalogIndex];
+      const gx = Math.floor(grid.gx - cat.size * 0.5 + 0.5);
+      const gy = Math.floor(grid.gy - cat.size * 0.5 + 0.5);
+      if (canPlaceAt(gx, gy, cat.size)) {
+        const newId = 'b_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+        state.buildings.push({ id: newId, catalogId: cat.id, gx, gy, size: cat.size });
+      } else {
+        showToast('⚠️ 無法放置於河道、園外沙漠或與其他建築重疊');
+      }
+    } else {
+      const hit = hitTestPlacedBuilding(grid.gx, grid.gy);
+      state.selectedPlacedId = hit ? hit.id : null;
+      updateActionBar();
+    }
+  }
+});
+
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.08 : 0.92;
+  state.zoom = Math.max(0.45, Math.min(1.85, state.zoom * factor));
+}, { passive: false });
+
+// ==========================================
+// 主渲染迴圈
+// ==========================================
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+
+let lastTime = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, (now - lastTime) / 1000);
+  lastTime = now;
+  state.time += dt;
+
+  updateAgents(dt);
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  ctx.translate(canvas.width * 0.5 + state.camX, canvas.height * 0.5 + state.camY);
+  ctx.scale(state.zoom, state.zoom);
+
+  drawOrganicWorld(state.time);
+  drawEntities();
+
+  ctx.restore();
+  requestAnimationFrame(loop);
+}
+
+// 啟動初始化
+resize();
+initDefaultCatalog();
+regenerateDecorations();
+initAgents();
+// 預設放兩座示範建築在園中
+state.buildings.push({ id: 'demo_1', catalogId: 'house', gx: 1, gy: -1, size: 2 });
+state.buildings.push({ id: 'demo_2', catalogId: 'harp', gx: 2, gy: 2, size: 1 });
+rebuildDockBar();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

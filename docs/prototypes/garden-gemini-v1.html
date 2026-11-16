@@ -1,0 +1,2160 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>曠野中的園子 — 2D 等角地形與建築樣本</title>
+<style>
+  * {
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+    margin: 0;
+    padding: 0;
+  }
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #E8BA78;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    touch-action: none;
+  }
+  #gameCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* 移軸景深與暗角覆蓋層（不擋滑鼠事件） */
+  #postOverlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse at center, rgba(0,0,0,0) 58%, rgba(58, 36, 18, 0.24) 100%);
+    z-index: 5;
+  }
+  #tiltBlurTop, #tiltBlurBottom {
+    position: fixed;
+    left: 0;
+    right: 0;
+    height: 7.5vh;
+    pointer-events: none;
+    z-index: 4;
+    backdrop-filter: blur(2.2px);
+    -webkit-backdrop-filter: blur(2.2px);
+  }
+  #tiltBlurTop {
+    top: 0;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0) 100%);
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0) 100%);
+  }
+  #tiltBlurBottom {
+    bottom: 0;
+    mask-image: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0) 100%);
+    -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0) 100%);
+  }
+
+  /* 頂部控制列 */
+  #topBar {
+    position: fixed;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    z-index: 20;
+    max-width: 96vw;
+  }
+  .ui-btn {
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 999px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #3E3326;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(70, 45, 20, 0.14);
+    transition: transform 0.12s ease, background 0.15s ease, box-shadow 0.15s ease;
+    white-space: nowrap;
+  }
+  .ui-btn:hover {
+    background: rgba(255, 255, 255, 0.94);
+    transform: translateY(-1px);
+  }
+  .ui-btn:active {
+    transform: translateY(0);
+  }
+  .ui-btn.active {
+    background: rgba(125, 178, 54, 0.9);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.8);
+  }
+
+  /* 底部建築／元件拖曳列 */
+  #paletteBar {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: none;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    border-radius: 18px;
+    padding: 8px 14px;
+    box-shadow: 0 6px 22px rgba(60, 40, 20, 0.18);
+    z-index: 20;
+    max-width: 94vw;
+    overflow-x: auto;
+  }
+  #paletteBar.visible {
+    display: flex;
+  }
+  .palette-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 64px;
+    height: 66px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    background: rgba(246, 241, 229, 0.85);
+    border: 1.5px solid rgba(140, 115, 80, 0.25);
+    cursor: grab;
+    transition: transform 0.12s ease, border-color 0.15s ease;
+    flex-shrink: 0;
+  }
+  .palette-item:hover {
+    transform: translateY(-2px);
+    border-color: #7DB236;
+  }
+  .palette-item img, .palette-item canvas {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    pointer-events: none;
+  }
+  .palette-item span {
+    font-size: 11px;
+    color: #4E4234;
+    margin-top: 2px;
+    font-weight: 600;
+  }
+
+  /* 提示氣泡 */
+  #toast {
+    position: fixed;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(54, 43, 30, 0.82);
+    color: #FFFDF7;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    z-index: 25;
+    white-space: nowrap;
+  }
+  #toast.show {
+    opacity: 1;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+<div id="tiltBlurTop"></div>
+<div id="tiltBlurBottom"></div>
+<div id="postOverlay"></div>
+
+<div id="topBar">
+  <button class="ui-btn" id="btnNewSeed">換一塊地</button>
+  <button class="ui-btn" id="btnExpand">擴張</button>
+  <button class="ui-btn" id="btnBuild">測試建築</button>
+  <button class="ui-btn" id="btnUpload">上傳元件表</button>
+  <button class="ui-btn active" id="btnAnim">動畫：開</button>
+</div>
+
+<div id="toast"></div>
+<div id="paletteBar"></div>
+<input type="file" id="spriteInput" accept="image/*" style="display:none" />
+
+<script>
+(() => {
+  'use strict';
+
+  /**
+   * ============================================================================
+   * 1. 色票與全域常數設定
+   * ============================================================================
+   */
+  const PALETTE = {
+    desertLight:  '#F2C27C',
+    desertMid:    '#DDA463',
+    desertShadow: '#BE8550',
+    dryLand:      '#C3C85A',
+    grassLight:   '#9CCB45',
+    grassMid:     '#7DB236',
+    grassDark:    '#5E8F2B',
+    forest:       '#4E8F48',
+    riverMain:    '#4FCFD0',
+    riverDeep:    '#33B8BE',
+    riverShallow: '#7FE0CF',
+    sandBank:     '#F3E2A6',
+    cliffGrass1:  '#5E7468',
+    cliffGrass2:  '#4A5F55',
+    cliffDesert1: '#B06A3C',
+    cliffDesert2: '#8E4A33',
+    redRock:      '#C8694A'
+  };
+
+  // 等角投影參數（標準 2:1 菱形格子）
+  const TILE_W = 44;
+  const TILE_H = 22;
+  const STEP_Z = 18; // 每層台階的高度像素
+  const GRID_N = 56; // 世界網格半徑（總大小 112x112 格，足夠延伸成無邊際曠野）
+  const WORLD_SIZE = GRID_N * 2;
+
+  /**
+   * ============================================================================
+   * 2. 遊戲核心狀態（純 JSON 結構，方便存檔與未來跨平台移植）
+   * ============================================================================
+   */
+  const gameState = {
+    seed: 20260351,
+    expandedPatches: [], // 已開墾的候選區塊紀錄 [{ id, cells: [[gx, gy], ...], progress: 1 }]
+    buildings: [],       // 已放置建築 [{ id, type, gx, gy, w, d, spriteIndex }]
+    animationEnabled: true
+  };
+
+  // 執行期快取與互動狀態（不需存進存檔 JSON）
+  const runtime = {
+    camera: { x: 0, y: 0, zoom: 1.0 },
+    isDraggingMap: false,
+    dragStart: { x: 0, y: 0 },
+    camStart: { x: 0, y: 0 },
+    pinchDist: 0,
+    pinchZoomStart: 1,
+
+    expandMode: false,
+    expandCandidates: [], // 3 塊候選擴張地
+    bloomingAnimations: [], // 正在「開花」變綠的區塊動畫
+
+    buildPaletteOpen: false,
+    draggingItem: null,   // { type, w, d, spriteIndex, label }
+    hoverGrid: null,      // { gx, gy, valid }
+
+    customSprites: [],    // 裁切並去背後的三乘三自訂元件 Canvas 陣列
+    isTabVisible: true,
+    lastTime: 0,
+    elapsed: 0
+  };
+
+  /**
+   * ============================================================================
+   * 3. 確定性偽隨機與 2D 雜訊工具（保證同種子產生完全一致的地形）
+   * ============================================================================
+   */
+  function mulberry32(a) {
+    return function() {
+      let t = a += 0x6D2B79F5;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function hash2D(ix, iy, seed) {
+    let n = Math.imul(ix, 374761393) + Math.imul(iy, 668265263) + Math.imul(seed, 1442695041);
+    n = (n ^ (n >>> 13)) >>> 0;
+    n = Math.imul(n, 1274126177) >>> 0;
+    return ((n ^ (n >>> 16)) >>> 0) / 4294967296;
+  }
+
+  function valueNoise2D(x, y, seed) {
+    const ix = Math.floor(x);
+    const iy = Math.floor(y);
+    const fx = x - ix;
+    const fy = y - iy;
+    const ux = fx * fx * (3 - 2 * fx);
+    const uy = fy * fy * (3 - 2 * fy);
+    const a = hash2D(ix, iy, seed);
+    const b = hash2D(ix + 1, iy, seed);
+    const c = hash2D(ix, iy + 1, seed);
+    const d = hash2D(ix + 1, iy + 1, seed);
+    return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy;
+  }
+
+  function fbm2D(x, y, seed, octaves = 3) {
+    let val = 0;
+    let amp = 0.5;
+    let freq = 1;
+    let norm = 0;
+    for (let i = 0; i < octaves; i++) {
+      val += amp * valueNoise2D(x * freq, y * freq, seed + i * 97);
+      norm += amp;
+      amp *= 0.5;
+      freq *= 2.03;
+    }
+    return val / norm;
+  }
+
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  function clamp(v, min, max) {
+    return Math.max(min, Math.min(max, v));
+  }
+
+  function hexToRgb(hex) {
+    const num = parseInt(hex.slice(1), 16);
+    return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+  }
+
+  function mixHex(hex1, hex2, t) {
+    const c1 = hexToRgb(hex1);
+    const c2 = hexToRgb(hex2);
+    const r = Math.round(lerp(c1.r, c2.r, t));
+    const g = Math.round(lerp(c1.g, c2.g, t));
+    const b = Math.round(lerp(c1.b, c2.b, t));
+    return `rgb(${r},${g},${b})`;
+  }
+
+  /**
+   * ============================================================================
+   * 4. 等角座標轉換工具（網格 <-> 世界畫布像素）
+   * ============================================================================
+   */
+  function gridToWorld(gx, gy, level = 0) {
+    const sx = (gx - gy) * (TILE_W * 0.5);
+    const sy = (gx + gy) * (TILE_H * 0.5) - level * STEP_Z;
+    return { x: sx, y: sy };
+  }
+
+  function screenToWorld(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const cx = rect.width * 0.5;
+    const cy = rect.height * 0.5;
+    return {
+      x: (clientX - cx - runtime.camera.x) / runtime.camera.zoom,
+      y: (clientY - cy - runtime.camera.y) / runtime.camera.zoom
+    };
+  }
+
+  // 反推滑鼠所在網格（考慮台階高度遮擋，由高層往低層檢查）
+  function screenToGrid(clientX, clientY) {
+    const wp = screenToWorld(clientX, clientY);
+    for (let lvl = 4; lvl >= 0; lvl--) {
+      const adjY = wp.y + lvl * STEP_Z;
+      const gx = Math.floor((wp.x / (TILE_W * 0.5) + adjY / (TILE_H * 0.5)) * 0.5);
+      const gy = Math.floor((adjY / (TILE_H * 0.5) - wp.x / (TILE_W * 0.5)) * 0.5);
+      const cell = worldMap.getCell(gx, gy);
+      if (cell && cell.level === lvl) {
+        return { gx, gy, level: lvl };
+      }
+    }
+    const gx = Math.floor((wp.x / (TILE_W * 0.5) + wp.y / (TILE_H * 0.5)) * 0.5);
+    const gy = Math.floor((wp.y / (TILE_H * 0.5) - wp.x / (TILE_W * 0.5)) * 0.5);
+    return { gx, gy, level: 0 };
+  }
+
+  /**
+   * ============================================================================
+   * 5. 世界地形資料模型（台階、河流、綠洲、細節裝飾與路徑）
+   * ============================================================================
+   */
+  class WorldMap {
+    constructor() {
+      this.cells = new Array(WORLD_SIZE * WORLD_SIZE);
+      this.riverPath = [];
+      this.treePos = { gx: 0, gy: 0, level: 2 };
+      this.props = [];      // 草叢、小花、石頭、灌木
+      this.walkNodes = [];  // 小人散步小徑節點
+      this.villagers = [];  // 園子裡散步的小人
+      this.leaves = [];     // 飄落樹葉
+      this.sandGusts = [];  // 沙漠微風細沙
+      this.birdShadow = { x: -400, y: -200, vx: 38, vy: 18, timer: 2 };
+    }
+
+    idx(gx, gy) {
+      const ix = gx + GRID_N;
+      const iy = gy + GRID_N;
+      if (ix < 0 || ix >= WORLD_SIZE || iy < 0 || iy >= WORLD_SIZE) return -1;
+      return iy * WORLD_SIZE + ix;
+    }
+
+    getCell(gx, gy) {
+      const i = this.idx(gx, gy);
+      return i >= 0 ? this.cells[i] : null;
+    }
+
+    generate(seed) {
+      const rng = mulberry32(seed);
+      this.riverPath = [];
+      this.props = [];
+      this.walkNodes = [];
+
+      // 1. 決定泉源與河流蜿蜒路徑（從左上方高台流向右下方低地）
+      const riverSet = new Map(); // "gx,gy" -> depth (0=淺灘, 1=河道)
+      let rx = -14 + Math.floor(rng() * 4);
+      let ry = -13 + Math.floor(rng() * 4);
+      const springPos = { gx: rx, gy: ry };
+
+      for (let step = 0; step < 52; step++) {
+        this.riverPath.push({ gx: rx, gy: ry, step });
+        const radius = step < 4 ? 1 : (step > 34 ? 0 : 1);
+        for (let dx = -radius; dx <= radius; dx++) {
+          for (let dy = -radius; dy <= radius; dy++) {
+            const dist = Math.abs(dx) + Math.abs(dy);
+            if (dist <= radius) {
+              const key = `${rx + dx},${ry + dy}`;
+              const prev = riverSet.get(key) || 0;
+              riverSet.set(key, Math.max(prev, dist === 0 ? 1.0 : 0.55));
+            }
+          }
+        }
+        // 往 (+x, +y) 方向蜿蜒前進
+        const wobble = Math.sin(step * 0.36 + seed * 0.01) * 0.65 + (rng() - 0.5) * 0.7;
+        if (wobble > 0.25) rx += 1;
+        else if (wobble < -0.25) ry += 1;
+        else {
+          if (rng() < 0.5) rx += 1;
+          else ry += 1;
+        }
+      }
+
+      // 2. 產生不規則棱角台階（2～4 層）與園子綠洲範圍
+      for (let gy = -GRID_N; gy < GRID_N; gy++) {
+        for (let gx = -GRID_N; gx < GRID_N; gx++) {
+          const distCenter = Math.hypot(gx * 0.95, gy * 1.05);
+          // 棱角感雜訊：結合低頻與高頻折線感，避免圓滑孤島
+          const n1 = fbm2D(gx * 0.075, gy * 0.075, seed, 3);
+          const n2 = fbm2D(gx * 0.19, gy * 0.19, seed + 55, 2);
+          const angular = Math.abs(n1 - 0.5) * 2.0; // 產生折線脊線
+          const ridge = 1.0 - angular;
+
+          // 距離河道的最近距離
+          let minRiverDist = 999;
+          let riverDepth = 0;
+          const rKey = `${gx},${gy}`;
+          if (riverSet.has(rKey)) {
+            minRiverDist = 0;
+            riverDepth = riverSet.get(rKey);
+          } else {
+            for (let i = 0; i < this.riverPath.length; i += 2) {
+              const rp = this.riverPath[i];
+              const d = Math.hypot(gx - rp.gx, gy - rp.gy);
+              if (d < minRiverDist) minRiverDist = d;
+            }
+          }
+
+          // 台階高度計算（0 ~ 3 層，共 4 階高度）
+          // 左上高、右下低，配合河流順流而下；外圍曠野也有不規則沙丘岩台階
+          const slopeBias = (-gx - gy) * 0.032;
+          const plateauField = n1 * 1.45 + ridge * 0.45 + slopeBias + (n2 - 0.5) * 0.35;
+          let level = 0;
+          if (plateauField > 1.25) level = 3;
+          else if (plateauField > 0.88) level = 2;
+          else if (plateauField > 0.52) level = 1;
+          else level = 0;
+
+          // 確保河道沿線台階順暢遞減，不會突然爬升擋住水流
+          if (minRiverDist < 2.6) {
+            const along = clamp((gx + gy + 26) / 48, 0, 1);
+            const maxRiverLvl = along < 0.28 ? 2 : (along < 0.65 ? 1 : 0);
+            level = Math.min(level, maxRiverLvl);
+          }
+
+          // 判斷是否屬於「綠色園子」核心區（靠河道與中心不規則區域）
+          const gardenNoise = fbm2D(gx * 0.11, gy * 0.11, seed + 211, 3) * 7.5;
+          const inCoreGarden = (distCenter < 11.5 + gardenNoise * 0.55) || (minRiverDist < 4.2 + gardenNoise * 0.38 && distCenter < 20);
+
+          let biome = 'desert'; // 'desert' | 'dry' | 'grass' | 'forest' | 'river' | 'sandbank'
+          let greenAmount = 0;  // 0 = 純曠野沙漠，1 = 繁茂綠地
+
+          if (riverDepth > 0 && (inCoreGarden || distCenter < 21)) {
+            biome = 'river';
+            greenAmount = 1;
+          } else if (minRiverDist <= 1.8 && (inCoreGarden || distCenter < 21)) {
+            biome = 'sandbank';
+            greenAmount = 0.85;
+          } else if (inCoreGarden) {
+            greenAmount = 1.0;
+            biome = n2 > 0.66 ? 'forest' : 'grass';
+          } else if (distCenter < 15.5 + gardenNoise * 0.65 || minRiverDist < 6.2) {
+            // 綠洲與曠野交界的「乾地過渡帶」
+            biome = 'dry';
+            greenAmount = 0.45;
+          } else {
+            biome = 'desert';
+            greenAmount = 0;
+          }
+
+          // 岩石／懸崖材質：外圍部分高台帶紅岩質感
+          const isRedRock = (biome === 'desert' && level >= 2 && n2 > 0.56);
+
+          const cell = {
+            gx, gy,
+            level,
+            biome,
+            greenAmount,
+            riverDepth,
+            isRedRock,
+            isSpring: (gx === springPos.gx && gy === springPos.gy),
+            shadeVar: hash2D(gx, gy, seed + 999), // 表面微雜訊
+            hasPath: false,
+            occupiedBy: null
+          };
+
+          this.cells[this.idx(gx, gy)] = cell;
+        }
+      }
+
+      // 3. 尋找園子中央最寬敞平坦的位置種下「生命大樹」
+      let bestTree = { gx: 0, gy: 0, score: -999 };
+      for (let gy = -6; gy <= 6; gy++) {
+        for (let gx = -6; gx <= 6; gx++) {
+          const c = this.getCell(gx, gy);
+          if (!c || (c.biome !== 'grass' && c.biome !== 'forest')) continue;
+          // 檢查周圍 1 格是否同高度且非河道，確保大樹穩穩立在平台上
+          let flatCount = 0;
+          for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+              const nb = this.getCell(gx + dx, gy + dy);
+              if (nb && nb.level === c.level && nb.biome !== 'river') flatCount++;
+            }
+          }
+          const score = flatCount * 10 - Math.hypot(gx, gy) + c.level * 2;
+          if (score > bestTree.score) {
+            bestTree = { gx, gy, score };
+          }
+        }
+      }
+      const treeCell = this.getCell(bestTree.gx, bestTree.gy);
+      this.treePos = {
+        gx: bestTree.gx,
+        gy: bestTree.gy,
+        level: treeCell ? treeCell.level : 1
+      };
+
+      // 4. 在園子內鋪設一條蜿蜒小徑並建立散步節點
+      this.buildGardenPath(rng);
+
+      // 5. 生成小草、小花、石頭點綴
+      this.populateDetails(rng);
+
+      // 6. 初始化園子裡散步的小人（2～3 個）
+      this.initVillagers(rng);
+    }
+
+    buildGardenPath(rng) {
+      this.walkNodes = [];
+      for (let gy = -14; gy <= 14; gy++) {
+        for (let gx = -14; gx <= 14; gx++) {
+          const c = this.getCell(gx, gy);
+          if (!c || (c.biome !== 'grass' && c.biome !== 'forest' && c.biome !== 'dry')) continue;
+          if (gx === this.treePos.gx && gy === this.treePos.gy) continue;
+          // 沿著大樹周圍形成環狀與延伸小徑
+          const dTree = Math.hypot(gx - this.treePos.gx, gy - this.treePos.gy);
+          if (dTree >= 2.2 && dTree <= 6.8 && (Math.abs(gx - this.treePos.gx) === 3 || Math.abs(gy - this.treePos.gy) === 3)) {
+            c.hasPath = true;
+            this.walkNodes.push({ gx, gy, level: c.level });
+          }
+        }
+      }
+    }
+
+    populateDetails(rng) {
+      this.props = [];
+      for (let gy = -34; gy <= 34; gy++) {
+        for (let gx = -34; gx <= 34; gx++) {
+          const c = this.getCell(gx, gy);
+          if (!c || c.biome === 'river') continue;
+          if (Math.abs(gx - this.treePos.gx) <= 1 && Math.abs(gy - this.treePos.gy) <= 1) continue;
+
+          const r = hash2D(gx * 3, gy * 3, gameState.seed + 77);
+          const ox = (hash2D(gx, gy, 11) - 0.5) * 14;
+          const oy = (hash2D(gx, gy, 23) - 0.5) * 7;
+
+          if (c.biome === 'grass' || c.biome === 'forest') {
+            if (r < 0.28) {
+              this.props.push({ type: 'grassTuft', gx, gy, ox, oy, scale: 0.8 + rng() * 0.5 });
+            } else if (r < 0.40) {
+              const colors = ['#FFF4B8', '#FF9EB5', '#FFFFFF', '#FFD166'];
+              this.props.push({
+                type: 'flower',
+                gx, gy, ox, oy,
+                color: colors[Math.floor(rng() * colors.length)],
+                scale: 0.85 + rng() * 0.4
+              });
+            } else if (c.biome === 'forest' && r < 0.49) {
+              this.props.push({ type: 'bush', gx, gy, ox, oy, scale: 0.85 + rng() * 0.45 });
+            }
+          } else if (c.biome === 'dry') {
+            if (r < 0.16) {
+              this.props.push({ type: 'dryGrass', gx, gy, ox, oy, scale: 0.8 + rng() * 0.4 });
+            } else if (r < 0.22) {
+              this.props.push({ type: 'pebble', gx, gy, ox, oy, scale: 0.7 + rng() * 0.5 });
+            }
+          } else if (c.biome === 'desert') {
+            if (r < 0.055) {
+              this.props.push({ type: 'pebble', gx, gy, ox, oy, scale: 0.7 + rng() * 0.7 });
+            } else if (r < 0.072) {
+              this.props.push({ type: 'desertScrub', gx, gy, ox, oy, scale: 0.8 + rng() * 0.4 });
+            }
+          }
+        }
+      }
+    }
+
+    initVillagers(rng) {
+      this.villagers = [];
+      const pool = this.walkNodes.length > 0 ? this.walkNodes : [{ gx: this.treePos.gx + 2, gy: this.treePos.gy + 2, level: this.treePos.level }];
+      const colors = ['#E86F52', '#4B88A2', '#F4A261'];
+      const count = 3;
+      for (let i = 0; i < count; i++) {
+        const start = pool[Math.floor(rng() * pool.length)];
+        this.villagers.push({
+          gx: start.gx,
+          gy: start.gy,
+          targetGx: start.gx,
+          targetGy: start.gy,
+          color: colors[i % colors.length],
+          pauseTimer: rng() * 2.0,
+          stepPhase: rng() * Math.PI * 2
+        });
+      }
+    }
+  }
+
+  const worldMap = new WorldMap();
+
+  /**
+   * ============================================================================
+   * 6. 離屏地形快取畫布（靜態地形與細膩光影只重繪於變動時，大幅提升效能）
+   * ============================================================================
+   */
+  const terrainCache = {
+    canvas: document.createElement('canvas'),
+    ctx: null,
+    width: 3600,
+    height: 2200,
+    offsetX: 1800,
+    offsetY: 1050,
+    dirty: true
+  };
+  terrainCache.canvas.width = terrainCache.width;
+  terrainCache.canvas.height = terrainCache.height;
+  terrainCache.ctx = terrainCache.canvas.getContext('2d');
+
+  // 預先產生微細紙張／沙粒雜訊圖樣，讓大面積沙漠與草地富有手作質感
+  const grainPattern = (() => {
+    const gc = document.createElement('canvas');
+    gc.width = 96;
+    gc.height = 96;
+    const gctx = gc.getContext('2d');
+    const img = gctx.createImageData(96, 96);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const v = Math.random() > 0.5 ? 255 : 0;
+      img.data[i] = v;
+      img.data[i + 1] = v;
+      img.data[i + 2] = v;
+      img.data[i + 3] = 11; // 極淡微顆粒
+    }
+    gctx.putImageData(img, 0, 0);
+    return gctx.createPattern(gc, 'repeat');
+  })();
+
+  function getTopColorForCell(cell) {
+    const v = (cell.shadeVar - 0.5) * 0.16; // 微幅筆觸色差
+    if (cell.biome === 'river') {
+      return cell.riverDepth > 0.8 ? PALETTE.riverDeep : PALETTE.riverMain;
+    }
+    if (cell.biome === 'sandbank') {
+      return mixHex(PALETTE.sandBank, PALETTE.grassLight, clamp(0.15 + v, 0, 0.35));
+    }
+    if (cell.biome === 'forest') {
+      return mixHex(PALETTE.forest, PALETTE.grassDark, clamp(0.35 + v, 0, 1));
+    }
+    if (cell.biome === 'grass') {
+      if (cell.hasPath) {
+        return mixHex('#D8C798', PALETTE.dryLand, clamp(0.35 + v, 0, 1));
+      }
+      const base = v > 0 ? mixHex(PALETTE.grassMid, PALETTE.grassLight, v * 2.5) : mixHex(PALETTE.grassMid, PALETTE.grassDark, -v * 2.2);
+      return base;
+    }
+    if (cell.biome === 'dry') {
+      return mixHex(PALETTE.dryLand, PALETTE.grassLight, clamp(0.25 + v, 0, 0.6));
+    }
+    // 沙漠曠野：依高度與雜訊呈現亮、暗、陰影三階變化
+    if (cell.isRedRock) {
+      return mixHex(PALETTE.redRock, PALETTE.desertMid, 0.35 + v);
+    }
+    if (cell.level >= 2) {
+      return mixHex(PALETTE.desertLight, '#F7D294', clamp(0.3 + v, 0, 1));
+    }
+    if (v > 0.02) return mixHex(PALETTE.desertLight, PALETTE.desertMid, 0.25);
+    if (v < -0.02) return mixHex(PALETTE.desertLight, PALETTE.desertMid, 0.55);
+    return PALETTE.desertLight;
+  }
+
+  function rebuildTerrainCache() {
+    const ctx = terrainCache.ctx;
+    const ox = terrainCache.offsetX;
+    const oy = terrainCache.offsetY;
+
+    ctx.clearRect(0, 0, terrainCache.width, terrainCache.height);
+
+    // 1. 鋪設無邊際曠野基底漸層（四面延伸，消除任何浮空島邊界感）
+    const bgGrad = ctx.createRadialGradient(ox, oy, 180, ox, oy, 1650);
+    bgGrad.addColorStop(0, PALETTE.desertLight);
+    bgGrad.addColorStop(0.55, '#ECC07E');
+    bgGrad.addColorStop(1, '#F3D29C');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, terrainCache.width, terrainCache.height);
+
+    // 2. 依等角繪製順序（gx + gy 由小到大）繪製每個地塊、懸崖、投射陰影、環境遮蔽與高光邊
+    const renderRange = 46;
+    for (let sum = -renderRange * 2; sum <= renderRange * 2; sum++) {
+      for (let gx = -renderRange; gx <= renderRange; gx++) {
+        const gy = sum - gx;
+        if (gy < -renderRange || gy > renderRange) continue;
+
+        const cell = worldMap.getCell(gx, gy);
+        if (!cell) continue;
+
+        const p = gridToWorld(gx, gy, cell.level);
+        const cx = ox + p.x;
+        const cy = oy + p.y;
+
+        const hw = TILE_W * 0.5;
+        const hh = TILE_H * 0.5;
+
+        // 鄰居（右下方 +x 與 +y 決定面向鏡頭的兩個懸崖側面；左上方 -x 與 -y 決定是否受高台陰影遮擋）
+        const nbRight = worldMap.getCell(gx + 1, gy); // 右下側面 (+x)
+        const nbLeft  = worldMap.getCell(gx, gy + 1); // 左下側面 (+y)
+        const nbBackX = worldMap.getCell(gx - 1, gy); // 左上鄰居 (-x)
+        const nbBackY = worldMap.getCell(gx, gy - 1); // 右上鄰居 (-y)
+
+        const lvlRight = nbRight ? nbRight.level : 0;
+        const lvlLeft  = nbLeft  ? nbLeft.level  : 0;
+        const lvlBackX = nbBackX ? nbBackX.level : 0;
+        const lvlBackY = nbBackY ? nbBackY.level : 0;
+
+        const isGreenish = (cell.biome === 'grass' || cell.biome === 'forest' || cell.biome === 'dry' || cell.biome === 'sandbank');
+
+        // A. 繪製左下懸崖側面（+y 面，受光較弱 -> 暗面）
+        if (cell.level > lvlLeft) {
+          const dropH = (cell.level - lvlLeft) * STEP_Z;
+          ctx.beginPath();
+          ctx.moveTo(cx - hw, cy);
+          ctx.lineTo(cx, cy + hh);
+          ctx.lineTo(cx, cy + hh + dropH);
+          ctx.lineTo(cx - hw, cy + dropH);
+          ctx.closePath();
+
+          const sideGrad = ctx.createLinearGradient(cx, cy + hh, cx, cy + hh + dropH);
+          if (isGreenish) {
+            sideGrad.addColorStop(0, PALETTE.cliffGrass1);
+            sideGrad.addColorStop(1, PALETTE.cliffGrass2);
+          } else if (cell.isRedRock) {
+            sideGrad.addColorStop(0, PALETTE.redRock);
+            sideGrad.addColorStop(1, PALETTE.cliffDesert2);
+          } else {
+            sideGrad.addColorStop(0, PALETTE.cliffDesert1);
+            sideGrad.addColorStop(1, PALETTE.cliffDesert2);
+          }
+          ctx.fillStyle = sideGrad;
+          ctx.fill();
+
+          // 懸崖岩層斜向紋理筆觸（增添手繪立體感）
+          ctx.strokeStyle = 'rgba(25, 16, 10, 0.14)';
+          ctx.lineWidth = 1;
+          for (let lv = 1; lv <= (cell.level - lvlLeft); lv++) {
+            const wy = cy + lv * STEP_Z;
+            ctx.beginPath();
+            ctx.moveTo(cx - hw + 3, wy - 1);
+            ctx.lineTo(cx - 3, wy + hh - 2);
+            ctx.stroke();
+          }
+
+          // 懸崖底部環境遮蔽暗帶（AO）
+          const aoGrad = ctx.createLinearGradient(cx, cy + hh + dropH - 7, cx, cy + hh + dropH);
+          aoGrad.addColorStop(0, 'rgba(30, 18, 10, 0)');
+          aoGrad.addColorStop(1, 'rgba(30, 18, 10, 0.34)');
+          ctx.fillStyle = aoGrad;
+          ctx.fill();
+        }
+
+        // B. 繪製右下懸崖側面（+x 面，背對左上方光源 -> 陰影面）
+        if (cell.level > lvlRight) {
+          const dropH = (cell.level - lvlRight) * STEP_Z;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy + hh);
+          ctx.lineTo(cx + hw, cy);
+          ctx.lineTo(cx + hw, cy + dropH);
+          ctx.lineTo(cx, cy + hh + dropH);
+          ctx.closePath();
+
+          const shadowSideGrad = ctx.createLinearGradient(cx, cy + hh, cx, cy + hh + dropH);
+          if (isGreenish) {
+            shadowSideGrad.addColorStop(0, PALETTE.cliffGrass2);
+            shadowSideGrad.addColorStop(1, '#34463E');
+          } else {
+            shadowSideGrad.addColorStop(0, PALETTE.cliffDesert2);
+            shadowSideGrad.addColorStop(1, '#6C3522');
+          }
+          ctx.fillStyle = shadowSideGrad;
+          ctx.fill();
+
+          // 懸崖往右下平台投射的柔和半透明陰影
+          const castLen = Math.min(dropH * 0.72, 24);
+          ctx.beginPath();
+          ctx.moveTo(cx, cy + hh + dropH);
+          ctx.lineTo(cx + hw, cy + dropH);
+          ctx.lineTo(cx + hw + castLen, cy + dropH + castLen * 0.45);
+          ctx.lineTo(cx + castLen, cy + hh + dropH + castLen * 0.45);
+          ctx.closePath();
+          ctx.fillStyle = 'rgba(58, 34, 16, 0.22)';
+          ctx.fill();
+
+          // 牆角底部環境遮蔽暗帶
+          const aoGradR = ctx.createLinearGradient(cx, cy + hh + dropH - 7, cx, cy + hh + dropH);
+          aoGradR.addColorStop(0, 'rgba(20, 12, 6, 0)');
+          aoGradR.addColorStop(1, 'rgba(20, 12, 6, 0.38)');
+          ctx.fillStyle = aoGradR;
+          ctx.fill();
+        }
+
+        // C. 繪製菱形頂面
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - hh);
+        ctx.lineTo(cx + hw + 0.4, cy);
+        ctx.lineTo(cx, cy + hh + 0.4);
+        ctx.lineTo(cx - hw - 0.4, cy);
+        ctx.closePath();
+
+        ctx.fillStyle = getTopColorForCell(cell);
+        ctx.fill();
+
+        // 河道深淺內層漸層與岸邊淺水圈
+        if (cell.biome === 'river') {
+          if (cell.riverDepth > 0.8) {
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - hh * 0.65);
+            ctx.lineTo(cx + hw * 0.65, cy);
+            ctx.lineTo(cx, cy + hh * 0.65);
+            ctx.lineTo(cx - hw * 0.65, cy);
+            ctx.closePath();
+            ctx.fillStyle = PALETTE.riverDeep;
+            ctx.fill();
+          }
+          // 岸邊淺水色邊緣
+          ctx.strokeStyle = PALETTE.riverShallow;
+          ctx.lineWidth = 1.6;
+          ctx.stroke();
+        }
+
+        // D. 若左上方有更高台階，在此平台牆角加柔和投影與環境遮蔽
+        if (lvlBackX > cell.level) {
+          ctx.beginPath();
+          ctx.moveTo(cx - hw, cy);
+          ctx.lineTo(cx, cy - hh);
+          ctx.lineTo(cx + 7, cy - hh + 3.5);
+          ctx.lineTo(cx - hw + 7, cy + 3.5);
+          ctx.closePath();
+          ctx.fillStyle = 'rgba(42, 26, 12, 0.24)';
+          ctx.fill();
+        }
+        if (lvlBackY > cell.level) {
+          ctx.beginPath();
+          ctx.moveTo(cx, cy - hh);
+          ctx.lineTo(cx + hw, cy);
+          ctx.lineTo(cx + hw - 5, cy + 2.5);
+          ctx.lineTo(cx - 5, cy - hh + 2.5);
+          ctx.closePath();
+          ctx.fillStyle = 'rgba(42, 26, 12, 0.16)';
+          ctx.fill();
+        }
+
+        // E. 懸崖頂部受光邊緣：加一條細亮邊，凸顯棱角立體感
+        if (cell.level > lvlLeft) {
+          ctx.beginPath();
+          ctx.moveTo(cx - hw + 0.5, cy);
+          ctx.lineTo(cx, cy + hh - 0.5);
+          ctx.strokeStyle = isGreenish ? 'rgba(225, 248, 175, 0.55)' : 'rgba(255, 238, 198, 0.65)';
+          ctx.lineWidth = 1.25;
+          ctx.stroke();
+        }
+        if (cell.level > lvlRight) {
+          ctx.beginPath();
+          ctx.moveTo(cx, cy + hh - 0.5);
+          ctx.lineTo(cx + hw - 0.5, cy);
+          ctx.strokeStyle = isGreenish ? 'rgba(195, 226, 145, 0.42)' : 'rgba(248, 215, 165, 0.48)';
+          ctx.lineWidth = 1.1;
+          ctx.stroke();
+        }
+      }
+    }
+
+    // 3. 疊加極細微的表面顆粒紋理，避免色塊平塗感
+    ctx.fillStyle = grainPattern;
+    ctx.fillRect(0, 0, terrainCache.width, terrainCache.height);
+
+    // 4. 曠野四週遠景熱氣霧感（越遠越淡，融合邊界）
+    const hazeGrad = ctx.createRadialGradient(ox, oy, 480, ox, oy, 1580);
+    hazeGrad.addColorStop(0, 'rgba(248, 224, 182, 0)');
+    hazeGrad.addColorStop(0.65, 'rgba(248, 224, 182, 0.28)');
+    hazeGrad.addColorStop(1, 'rgba(252, 236, 204, 0.85)');
+    ctx.fillStyle = hazeGrad;
+    ctx.fillRect(0, 0, terrainCache.width, terrainCache.height);
+
+    terrainCache.dirty = false;
+  }
+
+  /**
+   * ============================================================================
+   * 7. 擴張系統（「擴張」按鈕 -> 3 塊發光虛線候選地 -> 點選後 1.5 秒開花變綠）
+   * ============================================================================
+   */
+  function generateExpandCandidates() {
+    const candidates = [];
+    const rng = mulberry32(gameState.seed + gameState.expandedPatches.length * 131 + Math.floor(Math.random() * 999));
+
+    // 找出目前園子與曠野接壤的邊緣格子作為種子點
+    const borderCells = [];
+    for (let gy = -24; gy <= 24; gy++) {
+      for (let gx = -24; gx <= 24; gx++) {
+        const c = worldMap.getCell(gx, gy);
+        if (!c || (c.biome !== 'desert' && c.biome !== 'dry')) continue;
+        // 檢查是否鄰近綠地或河岸
+        const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+        let touchesGarden = false;
+        for (const [dx, dy] of dirs) {
+          const nb = worldMap.getCell(gx + dx, gy + dy);
+          if (nb && (nb.biome === 'grass' || nb.biome === 'forest' || nb.biome === 'sandbank')) {
+            touchesGarden = true;
+            break;
+          }
+        }
+        if (touchesGarden) borderCells.push(c);
+      }
+    }
+
+    if (borderCells.length === 0) return [];
+
+    // 挑選 3 個彼此保持距離的候選區域
+    const chosenAnchors = [];
+    for (let attempt = 0; attempt < 80 && chosenAnchors.length < 3; attempt++) {
+      const pick = borderCells[Math.floor(rng() * borderCells.length)];
+      const tooClose = chosenAnchors.some(a => Math.hypot(a.gx - pick.gx, a.gy - pick.gy) < 8.5);
+      if (!tooClose) chosenAnchors.push(pick);
+    }
+
+    chosenAnchors.forEach((anchor, idx) => {
+      // 隨機有機蔓延出約 14~18 格大小差不多的不規則區塊
+      const targetSize = 15 + Math.floor(rng() * 4);
+      const patchMap = new Map();
+      const frontier = [anchor];
+      patchMap.set(`${anchor.gx},${anchor.gy}`, anchor);
+
+      while (frontier.length > 0 && patchMap.size < targetSize) {
+        const curIdx = Math.floor(rng() * frontier.length);
+        const cur = frontier[curIdx];
+        const neighbors = [
+          [cur.gx + 1, cur.gy],
+          [cur.gx - 1, cur.gy],
+          [cur.gx, cur.gy + 1],
+          [cur.gx, cur.gy - 1]
+        ];
+        // 打亂方向產生自然不規則輪廓
+        neighbors.sort(() => rng() - 0.5);
+        let grew = false;
+        for (const [nx, ny] of neighbors) {
+          const key = `${nx},${ny}`;
+          if (patchMap.has(key)) continue;
+          const nc = worldMap.getCell(nx, ny);
+          if (!nc) continue;
+          if (nc.biome === 'desert' || nc.biome === 'dry') {
+            patchMap.set(key, nc);
+            frontier.push(nc);
+            grew = true;
+            if (patchMap.size >= targetSize) break;
+          }
+        }
+        if (!grew) frontier.splice(curIdx, 1);
+      }
+
+      const cells = Array.from(patchMap.values()).map(c => ({ gx: c.gx, gy: c.gy, level: c.level }));
+      const boundaryEdges = computePatchBoundaryEdges(patchMap);
+      candidates.push({
+        id: `cand_${idx}_${Date.now()}`,
+        cells,
+        boundaryEdges
+      });
+    });
+
+    return candidates;
+  }
+
+  // 計算區塊外圍輪廓線段，用來畫發光虛線
+  function computePatchBoundaryEdges(patchMap) {
+    const edges = [];
+    const hw = TILE_W * 0.5;
+    const hh = TILE_H * 0.5;
+    for (const c of patchMap.values()) {
+      const p = gridToWorld(c.gx, c.gy, c.level);
+      // 4 個方向若不在 patchMap 內，就加入外邊界線段
+      if (!patchMap.has(`${c.gx},${c.gy - 1}`)) {
+        edges.push({ x1: p.x, y1: p.y - hh, x2: p.x + hw, y2: p.y });
+      }
+      if (!patchMap.has(`${c.gx + 1},${c.gy}`)) {
+        edges.push({ x1: p.x + hw, y1: p.y, x2: p.x, y2: p.y + hh });
+      }
+      if (!patchMap.has(`${c.gx},${c.gy + 1}`)) {
+        edges.push({ x1: p.x, y1: p.y + hh, x2: p.x - hw, y2: p.y });
+      }
+      if (!patchMap.has(`${c.gx - 1},${c.gy}`)) {
+        edges.push({ x1: p.x - hw, y1: p.y, x2: p.x, y2: p.y - hh });
+      }
+    }
+    return edges;
+  }
+
+  function triggerExpandPatch(candidate) {
+    // 記錄進 JSON 狀態
+    gameState.expandedPatches.push({
+      id: candidate.id,
+      cells: candidate.cells.map(c => [c.gx, c.gy])
+    });
+
+    // 啟動 1.5 秒開花變綠動畫
+    runtime.bloomingAnimations.push({
+      cells: candidate.cells,
+      elapsed: 0,
+      duration: 1.5,
+      sprouted: new Set()
+    });
+
+    // 檢查區塊是否碰到河道或河道末端，若是則讓江河延伸過去
+    extendRiverIntoPatch(candidate.cells);
+
+    runtime.expandMode = false;
+    runtime.expandCandidates = [];
+    document.getElementById('btnExpand').classList.remove('active');
+    showToast('曠野正在開花，新園地已相連！');
+  }
+
+  function extendRiverIntoPatch(patchCells) {
+    const patchSet = new Set(patchCells.map(c => `${c.gx},${c.gy}`));
+    // 檢查現有河道是否鄰接此新區塊
+    let entryCell = null;
+    for (const c of patchCells) {
+      const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+      for (const [dx, dy] of dirs) {
+        const nb = worldMap.getCell(c.gx + dx, c.gy + dy);
+        if (nb && nb.biome === 'river') {
+          entryCell = c;
+          break;
+        }
+      }
+      if (entryCell) break;
+    }
+    if (!entryCell) return;
+
+    // 沿著區塊內部延伸出一小段清澈溪流與沙岸
+    let cur = entryCell;
+    for (let step = 0; step < 6; step++) {
+      const cell = worldMap.getCell(cur.gx, cur.gy);
+      if (!cell) break;
+      cell.biome = 'river';
+      cell.riverDepth = step < 4 ? 0.9 : 0.55;
+      cell.greenAmount = 1;
+      worldMap.riverPath.push({ gx: cell.gx, gy: cell.gy, step: worldMap.riverPath.length });
+
+      // 周圍一圈變成濕潤沙岸
+      for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+        const adj = worldMap.getCell(cell.gx + dx, cell.gy + dy);
+        if (adj && adj.biome !== 'river' && patchSet.has(`${adj.gx},${adj.gy}`)) {
+          adj.biome = 'sandbank';
+        }
+      }
+
+      // 往區塊內下一個尚未成河的格子前進
+      const next = patchCells.find(pc => {
+        const d = Math.abs(pc.gx - cur.gx) + Math.abs(pc.gy - cur.gy);
+        const wc = worldMap.getCell(pc.gx, pc.gy);
+        return d === 1 && wc && wc.biome !== 'river';
+      });
+      if (!next) break;
+      cur = next;
+    }
+  }
+
+  /**
+   * ============================================================================
+   * 8. 建築放置驗證與 3x3 洋紅去背元件表裁切
+   * ============================================================================
+   */
+  const DEFAULT_BUILDINGS = [
+    { type: 'block1x1', label: '石砌小亭 1×1', w: 1, d: 1, colorTop: '#F4EFE4', colorLeft: '#D6CEBE', colorRight: '#B8AF9E', height: 22 },
+    { type: 'block2x2', label: '園丁工坊 2×2', w: 2, d: 2, colorTop: '#E9C496', colorLeft: '#C89B6E', colorRight: '#A3774E', height: 30 },
+    { type: 'block2x3', label: '講堂長屋 2×3', w: 2, d: 3, colorTop: '#E28A6B', colorLeft: '#C26C4F', colorRight: '#9E5037', height: 34 }
+  ];
+
+  // 檢查 (gx, gy) 起算 w x d 格是否全部在園子平坦平台內（不可在懸崖邊、水上、沙漠或跨台階）
+  function canPlaceBuilding(gx, gy, w, d) {
+    let baseLevel = null;
+    for (let dx = 0; dx < w; dx++) {
+      for (let dy = 0; dy < d; dy++) {
+        const cell = worldMap.getCell(gx + dx, gy + dy);
+        if (!cell) return false;
+        // 只能在園子綠地或乾地平台上，不可在河水或曠野沙漠
+        if (cell.biome !== 'grass' && cell.biome !== 'forest' && cell.biome !== 'dry') return false;
+        if (cell.occupiedBy) return false;
+        if (Math.abs((gx + dx) - worldMap.treePos.gx) <= 1 && Math.abs((gy + dy) - worldMap.treePos.gy) <= 1) {
+          return false; // 避開中央大樹根部
+        }
+        if (baseLevel === null) baseLevel = cell.level;
+        else if (cell.level !== baseLevel) return false; // 不可跨懸崖高低差
+
+        // 檢查是否緊貼懸崖邊緣（四周鄰居若有低於此平台的懸崖，視為太窄或懸崖邊）
+        const neighbors = [
+          worldMap.getCell(gx + dx + 1, gy + dy),
+          worldMap.getCell(gx + dx - 1, gy + dy),
+          worldMap.getCell(gx + dx, gy + dy + 1),
+          worldMap.getCell(gx + dx, gy + dy - 1)
+        ];
+        for (const nb of neighbors) {
+          if (!nb || nb.level < baseLevel) return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  function placeBuilding(item, gx, gy) {
+    const cell = worldMap.getCell(gx, gy);
+    const bId = `bld_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const record = {
+      id: bId,
+      type: item.type,
+      gx,
+      gy,
+      level: cell ? cell.level : 1,
+      w: item.w,
+      d: item.d,
+      spriteIndex: item.spriteIndex ?? -1
+    };
+    gameState.buildings.push(record);
+
+    for (let dx = 0; dx < item.w; dx++) {
+      for (let dy = 0; dy < item.d; dy++) {
+        const c = worldMap.getCell(gx + dx, gy + dy);
+        if (c) c.occupiedBy = bId;
+      }
+    }
+  }
+
+  // 解析 3×3 洋紅 (#FF00FF) 背景元件表並自動去背（含容差與邊緣去粉紅溢色處理）
+  function processSpriteSheet(img) {
+    const sw = Math.floor(img.width / 3);
+    const sh = Math.floor(img.height / 3);
+    const results = [];
+
+    for (let row = 0; row < 3; row++) {
+      for (let col = 0; col < 3; col++) {
+        const c = document.createElement('canvas');
+        c.width = sw;
+        c.height = sh;
+        const cctx = c.getContext('2d');
+        cctx.drawImage(img, col * sw, row * sh, sw, sh, 0, 0, sw, sh);
+
+        const imgData = cctx.getImageData(0, 0, sw, sh);
+        const data = imgData.data;
+        let nonEmptyPixels = 0;
+
+        for (let i = 0; i < data.length; i += 4) {
+          const r = data[i];
+          const g = data[i + 1];
+          const b = data[i + 2];
+
+          // 計算與純洋紅 (255, 0, 255) 的距離與洋紅程度
+          const distMagenta = Math.hypot(r - 255, g - 0, b - 255);
+          const magentaExcess = Math.min(r, b) - g; // 洋紅特徵：紅與藍遠高於綠
+
+          if (distMagenta < 95 || (magentaExcess > 75 && g < 110)) {
+            // 完全透明
+            data[i + 3] = 0;
+          } else if (distMagenta < 145 || magentaExcess > 40) {
+            // 抗鋸齒半透明過渡邊緣：平滑淡出並抑制粉紅邊緣溢色 (despill)
+            const alphaFactor = clamp((distMagenta - 95) / 50, 0, 1);
+            data[i + 3] = Math.round(data[i + 3] * alphaFactor);
+            // 把殘留的洋紅偏向拉回中性灰綠，徹底消除粉紅邊
+            const neutral = (r + b) * 0.5;
+            if (neutral > g) {
+              const reduce = (neutral - g) * 0.65;
+              data[i] = clamp(r - reduce, 0, 255);
+              data[i + 2] = clamp(b - reduce, 0, 255);
+            }
+            if (data[i + 3] > 20) nonEmptyPixels++;
+          } else {
+            nonEmptyPixels++;
+          }
+        }
+
+        cctx.putImageData(imgData, 0, 0);
+        if (nonEmptyPixels > 12) {
+          results.push(c);
+        }
+      }
+    }
+    return results;
+  }
+
+  /**
+   * ============================================================================
+   * 9. 動態層繪製（河流波紋、植物微風搖曳、大樹、建築前後遮擋、小人、落葉與飛鳥）
+   * ============================================================================
+   */
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  function resizeCanvas() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.floor(window.innerWidth * dpr);
+    canvas.height = Math.floor(window.innerHeight * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  // 繪製測試等角方塊建築
+  function drawIsoBlockBuilding(ctx, gx, gy, level, w, d, heightPx, colors, alpha = 1.0) {
+    // 計算佔地四角在世界座標的位置
+    const pTop    = gridToWorld(gx, gy, level);
+    const pRight  = gridToWorld(gx + w, gy, level);
+    const pBottom = gridToWorld(gx + w, gy + d, level);
+    const pLeft   = gridToWorld(gx, gy + d, level);
+
+    // 調整中心對齊格線頂點
+    const offY = -TILE_H * 0.5;
+    const t0 = { x: pTop.x,    y: pTop.y + offY };
+    const t1 = { x: pRight.x,  y: pRight.y + offY };
+    const t2 = { x: pBottom.x, y: pBottom.y + offY };
+    const t3 = { x: pLeft.x,   y: pLeft.y + offY };
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    // 1. 柔和接地陰影（往右下偏移）
+    ctx.beginPath();
+    ctx.moveTo(t0.x + 6, t0.y + 4);
+    ctx.lineTo(t1.x + 12, t1.y + 6);
+    ctx.lineTo(t2.x + 12, t2.y + 7);
+    ctx.lineTo(t3.x + 6, t3.y + 5);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(36, 24, 12, 0.28)';
+    ctx.fill();
+
+    // 2. 左側面（受光面）
+    ctx.beginPath();
+    ctx.moveTo(t3.x, t3.y);
+    ctx.lineTo(t2.x, t2.y);
+    ctx.lineTo(t2.x, t2.y - heightPx);
+    ctx.lineTo(t3.x, t3.y - heightPx);
+    ctx.closePath();
+    ctx.fillStyle = colors.left;
+    ctx.fill();
+
+    // 3. 右側面（背光陰影面）
+    ctx.beginPath();
+    ctx.moveTo(t2.x, t2.y);
+    ctx.lineTo(t1.x, t1.y);
+    ctx.lineTo(t1.x, t1.y - heightPx);
+    ctx.lineTo(t2.x, t2.y - heightPx);
+    ctx.closePath();
+    ctx.fillStyle = colors.right;
+    ctx.fill();
+
+    // 4. 屋頂面
+    ctx.beginPath();
+    ctx.moveTo(t0.x, t0.y - heightPx);
+    ctx.lineTo(t1.x, t1.y - heightPx);
+    ctx.lineTo(t2.x, t2.y - heightPx);
+    ctx.lineTo(t3.x, t3.y - heightPx);
+    ctx.closePath();
+    ctx.fillStyle = colors.top;
+    ctx.fill();
+
+    // 屋頂受光亮邊
+    ctx.beginPath();
+    ctx.moveTo(t3.x, t3.y - heightPx);
+    ctx.lineTo(t0.x, t0.y - heightPx);
+    ctx.lineTo(t1.x, t1.y - heightPx);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
+    ctx.lineWidth = 1.3;
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  // 繪製自訂上傳精靈建築（含底部接地陰影）
+  function drawSpriteBuilding(ctx, spriteCanvas, gx, gy, level, w, d, alpha = 1.0) {
+    const center = gridToWorld(gx + (w - 1) * 0.5, gy + (d - 1) * 0.5, level);
+    const footW = (w + d) * (TILE_W * 0.36);
+    const aspect = spriteCanvas.height / spriteCanvas.width;
+    const drawW = footW * 1.45;
+    const drawH = drawW * aspect;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+
+    // 柔和橢圓接地陰影
+    ctx.beginPath();
+    ctx.ellipse(center.x + 5, center.y + 3, footW * 0.62, footW * 0.32, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(34, 22, 10, 0.30)';
+    ctx.fill();
+
+    ctx.drawImage(
+      spriteCanvas,
+      center.x - drawW * 0.5,
+      center.y - drawH + TILE_H * 0.35,
+      drawW,
+      drawH
+    );
+    ctx.restore();
+  }
+
+  // 繪製園子中央「生命大樹」（光從左上照來，樹冠分明暗層次，隨微風輕擺）
+  function drawGrandTree(ctx, time) {
+    const tp = worldMap.treePos;
+    const pos = gridToWorld(tp.gx, tp.gy, tp.level);
+    const sway = gameState.animationEnabled ? Math.sin(time * 1.25) * 2.4 : 0;
+
+    ctx.save();
+    // 1. 樹蔭往右下投射的柔和陰影
+    ctx.beginPath();
+    ctx.ellipse(pos.x + 18, pos.y + 9, 34, 17, 0.18, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(32, 46, 22, 0.28)';
+    ctx.fill();
+
+    // 2. 粗壯樹幹與根部
+    ctx.fillStyle = '#6D4C3D';
+    ctx.beginPath();
+    ctx.moveTo(pos.x - 6, pos.y + 3);
+    ctx.quadraticCurveTo(pos.x - 3, pos.y - 18, pos.x - 4 + sway * 0.3, pos.y - 34);
+    ctx.lineTo(pos.x + 5 + sway * 0.3, pos.y - 34);
+    ctx.quadraticCurveTo(pos.x + 4, pos.y - 18, pos.x + 7, pos.y + 3);
+    ctx.closePath();
+    ctx.fill();
+
+    // 樹幹左側受光高光
+    ctx.strokeStyle = '#9C7561';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(pos.x - 3.5, pos.y);
+    ctx.lineTo(pos.x - 2.5 + sway * 0.3, pos.y - 30);
+    ctx.stroke();
+
+    // 3. 層次分明的樹冠（底層暗綠、中層翠綠、左上受光亮綠）
+    const puffs = [
+      { dx: 12,  dy: -34, r: 21, col: PALETTE.grassDark },
+      { dx: -12, dy: -35, r: 22, col: PALETTE.forest },
+      { dx: 0,   dy: -44, r: 26, col: PALETTE.forest },
+      { dx: -9,  dy: -49, r: 19, col: PALETTE.grassMid },
+      { dx: -13, dy: -54, r: 13, col: PALETTE.grassLight }
+    ];
+    for (const pf of puffs) {
+      ctx.beginPath();
+      ctx.arc(pos.x + pf.dx + sway, pos.y + pf.dy, pf.r, 0, Math.PI * 2);
+      ctx.fillStyle = pf.col;
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // 繪製流動河水波光與岸邊白色細浪
+  function drawAnimatedRiver(ctx, time) {
+    const wavePulse = gameState.animationEnabled ? (Math.sin(time * 1.8) * 0.5 + 0.5) : 0.4;
+    const shimmerPhase = gameState.animationEnabled ? time * 1.4 : 0;
+
+    ctx.save();
+    for (let i = 0; i < worldMap.riverPath.length; i++) {
+      const rp = worldMap.riverPath[i];
+      const cell = worldMap.getCell(rp.gx, rp.gy);
+      if (!cell || cell.biome !== 'river') continue;
+
+      const p = gridToWorld(rp.gx, rp.gy, cell.level);
+
+      // 岸邊會慢慢呼吸伸縮的白色細浪圈
+      const hw = (TILE_W * 0.44) * (0.92 + wavePulse * 0.08);
+      const hh = (TILE_H * 0.44) * (0.92 + wavePulse * 0.08);
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y - hh);
+      ctx.lineTo(p.x + hw, p.y);
+      ctx.lineTo(p.x, p.y + hh);
+      ctx.lineTo(p.x - hw, p.y);
+      ctx.closePath();
+      ctx.strokeStyle = `rgba(255, 255, 255, ${0.22 + wavePulse * 0.22})`;
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      // 順流移動的水面銀白閃光
+      const flowOffset = ((shimmerPhase + i * 0.35) % 1);
+      const sx = p.x - 6 + flowOffset * 12;
+      const sy = p.y - 3 + flowOffset * 6;
+      const sparkAlpha = Math.sin(flowOffset * Math.PI) * 0.55;
+      if (sparkAlpha > 0.05) {
+        ctx.fillStyle = `rgba(255, 255, 255, ${sparkAlpha.toFixed(2)})`;
+        ctx.fillRect(sx, sy, 3.2, 1.3);
+      }
+    }
+    ctx.restore();
+  }
+
+  // 繪製開花變綠過渡動畫（1.5 秒內顏色漸變 + 小草小花逐一冒出）
+  function drawBloomingPatches(ctx) {
+    for (const anim of runtime.bloomingAnimations) {
+      const t = clamp(anim.elapsed / anim.duration, 0, 1);
+      const ease = 1 - Math.pow(1 - t, 3);
+
+      for (let i = 0; i < anim.cells.length; i++) {
+        const cInfo = anim.cells[i];
+        const cell = worldMap.getCell(cInfo.gx, cInfo.gy);
+        if (!cell) continue;
+        const p = gridToWorld(cInfo.gx, cInfo.gy, cell.level);
+        const hw = TILE_W * 0.5;
+        const hh = TILE_H * 0.5;
+
+        // 顏色漸變覆蓋層
+        ctx.save();
+        ctx.globalAlpha = ease * 0.92;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y - hh);
+        ctx.lineTo(p.x + hw, p.y);
+        ctx.lineTo(p.x, p.y + hh);
+        ctx.lineTo(p.x - hw, p.y);
+        ctx.closePath();
+        ctx.fillStyle = cell.biome === 'river' ? PALETTE.riverMain : (i % 3 === 0 ? PALETTE.grassLight : PALETTE.grassMid);
+        ctx.fill();
+
+        // 隨進度冒出彈性放大的嫩草與小花
+        const localT = clamp((t * 1.35) - (i / anim.cells.length) * 0.35, 0, 1);
+        if (localT > 0 && cell.biome !== 'river') {
+          const popScale = Math.sin(localT * Math.PI * 0.75) * 1.15;
+          ctx.translate(p.x, p.y);
+          ctx.scale(popScale, popScale);
+          ctx.strokeStyle = PALETTE.grassDark;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(-2, 0); ctx.lineTo(-4, -6);
+          ctx.moveTo(1, 0);  ctx.lineTo(3, -7);
+          ctx.stroke();
+
+          if (i % 2 === 0) {
+            ctx.fillStyle = i % 4 === 0 ? '#FFF3B0' : '#FF9EBB';
+            ctx.beginPath();
+            ctx.arc(0, -7, 2.2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+        ctx.restore();
+      }
+    }
+  }
+
+  // 繪製擴張模式的 3 塊發光虛線候選區
+  function drawExpandCandidates(ctx, time) {
+    if (!runtime.expandMode) return;
+    const pulse = 0.65 + Math.sin(time * 4.0) * 0.35;
+
+    ctx.save();
+    for (const cand of runtime.expandCandidates) {
+      // 淡綠色微光底色
+      for (const c of cand.cells) {
+        const p = gridToWorld(c.gx, c.gy, c.level);
+        const hw = TILE_W * 0.5;
+        const hh = TILE_H * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y - hh);
+        ctx.lineTo(p.x + hw, p.y);
+        ctx.lineTo(p.x, p.y + hh);
+        ctx.lineTo(p.x - hw, p.y);
+        ctx.closePath();
+        ctx.fillStyle = `rgba(156, 203, 69, ${(0.18 + pulse * 0.14).toFixed(2)})`;
+        ctx.fill();
+      }
+
+      // 外輪廓發光虛線
+      ctx.shadowColor = '#E9FF99';
+      ctx.shadowBlur = 10;
+      ctx.strokeStyle = `rgba(255, 253, 215, ${(0.75 + pulse * 0.25).toFixed(2)})`;
+      ctx.lineWidth = 2.2;
+      ctx.setLineDash([6, 5]);
+      ctx.lineDashOffset = -time * 16;
+
+      ctx.beginPath();
+      for (const e of cand.boundaryEdges) {
+        ctx.moveTo(e.x1, e.y1);
+        ctx.lineTo(e.x2, e.y2);
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // 繪製放置建築時的隱形格子高亮（綠＝可放、紅＝不可放）
+  function drawPlacementGridOverlay(ctx) {
+    if (!runtime.draggingItem || !runtime.hoverGrid) return;
+    const { gx, gy } = runtime.hoverGrid;
+    const { w, d } = runtime.draggingItem;
+    const valid = canPlaceBuilding(gx, gy, w, d);
+
+    ctx.save();
+    for (let dx = 0; dx < w; dx++) {
+      for (let dy = 0; dy < d; dy++) {
+        const cell = worldMap.getCell(gx + dx, gy + dy);
+        const lvl = cell ? cell.level : 0;
+        const p = gridToWorld(gx + dx, gy + dy, lvl);
+        const hw = TILE_W * 0.5;
+        const hh = TILE_H * 0.5;
+
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y - hh);
+        ctx.lineTo(p.x + hw, p.y);
+        ctx.lineTo(p.x, p.y + hh);
+        ctx.lineTo(p.x - hw, p.y);
+        ctx.closePath();
+
+        ctx.fillStyle = valid ? 'rgba(110, 215, 85, 0.45)' : 'rgba(235, 75, 65, 0.48)';
+        ctx.fill();
+        ctx.strokeStyle = valid ? 'rgba(220, 255, 195, 0.9)' : 'rgba(255, 190, 185, 0.9)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+    }
+
+    // 半透明預覽建築本體
+    const baseCell = worldMap.getCell(gx, gy);
+    const previewLvl = baseCell ? baseCell.level : 0;
+    if (runtime.draggingItem.spriteIndex >= 0 && runtime.customSprites[runtime.draggingItem.spriteIndex]) {
+      drawSpriteBuilding(ctx, runtime.customSprites[runtime.draggingItem.spriteIndex], gx, gy, previewLvl, w, d, 0.78);
+    } else {
+      const def = DEFAULT_BUILDINGS.find(b => b.type === runtime.draggingItem.type) || DEFAULT_BUILDINGS[0];
+      drawIsoBlockBuilding(ctx, gx, gy, previewLvl, w, d, def.height, {
+        top: def.colorTop, left: def.colorLeft, right: def.colorRight
+      }, 0.78);
+    }
+    ctx.restore();
+  }
+
+  // 主場景深度排序渲染（小花小草、建築、大樹、小人依等角前後順序正確遮擋）
+  function drawSortedEntities(ctx, time) {
+    const sway = gameState.animationEnabled ? Math.sin(time * 2.1) * 1.6 : 0;
+    const renderList = [];
+
+    // 1. 植物與小石頭點綴
+    for (const pr of worldMap.props) {
+      const cell = worldMap.getCell(pr.gx, pr.gy);
+      if (!cell) continue;
+      renderList.push({
+        sortKey: pr.gx + pr.gy + (pr.oy / TILE_H) * 0.4,
+        draw: () => {
+          const p = gridToWorld(pr.gx, pr.gy, cell.level);
+          const x = p.x + pr.ox;
+          const y = p.y + pr.oy;
+          const localSway = sway * (0.7 + (pr.gx % 3) * 0.2);
+
+          if (pr.type === 'grassTuft' || pr.type === 'dryGrass') {
+            ctx.strokeStyle = pr.type === 'grassTuft' ? PALETTE.grassDark : '#A4A846';
+            ctx.lineWidth = 1.25;
+            ctx.beginPath();
+            ctx.moveTo(x - 1.5, y); ctx.lineTo(x - 3 + localSway, y - 5 * pr.scale);
+            ctx.moveTo(x + 1, y);   ctx.lineTo(x + 2.5 + localSway, y - 5.5 * pr.scale);
+            ctx.stroke();
+          } else if (pr.type === 'flower') {
+            ctx.strokeStyle = PALETTE.grassDark;
+            ctx.lineWidth = 1.1;
+            ctx.beginPath();
+            ctx.moveTo(x, y); ctx.lineTo(x + localSway * 0.8, y - 5);
+            ctx.stroke();
+            ctx.fillStyle = pr.color;
+            ctx.beginPath();
+            ctx.arc(x + localSway * 0.8, y - 5.5, 1.8 * pr.scale, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (pr.type === 'bush') {
+            ctx.fillStyle = 'rgba(30, 45, 20, 0.2)';
+            ctx.beginPath();
+            ctx.ellipse(x + 2, y + 1.5, 5.5, 2.8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = PALETTE.forest;
+            ctx.beginPath();
+            ctx.arc(x + localSway * 0.5, y - 3, 4.8 * pr.scale, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = PALETTE.grassMid;
+            ctx.beginPath();
+            ctx.arc(x - 1.5 + localSway * 0.5, y - 4.2, 3.1 * pr.scale, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (pr.type === 'pebble') {
+            ctx.fillStyle = '#B79C7A';
+            ctx.beginPath();
+            ctx.ellipse(x, y, 2.6 * pr.scale, 1.5 * pr.scale, 0, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (pr.type === 'desertScrub') {
+            ctx.strokeStyle = '#9D834E';
+            ctx.lineWidth = 1.1;
+            ctx.beginPath();
+            ctx.moveTo(x, y); ctx.lineTo(x - 2.5 + localSway, y - 4);
+            ctx.moveTo(x, y); ctx.lineTo(x + 2 + localSway, y - 3.5);
+            ctx.stroke();
+          }
+        }
+      });
+    }
+
+    // 2. 中央生命大樹
+    renderList.push({
+      sortKey: worldMap.treePos.gx + worldMap.treePos.gy + 0.35,
+      draw: () => drawGrandTree(ctx, time)
+    });
+
+    // 3. 已放置的建築（依佔地最前緣 gx + w - 1 + gy + d - 1 排序，確保正確前後遮擋）
+    for (const b of gameState.buildings) {
+      const sortDepth = (b.gx + b.w - 1) + (b.gy + b.d - 1) + 0.4;
+      renderList.push({
+        sortKey: sortDepth,
+        draw: () => {
+          if (b.spriteIndex >= 0 && runtime.customSprites[b.spriteIndex]) {
+            drawSpriteBuilding(ctx, runtime.customSprites[b.spriteIndex], b.gx, b.gy, b.level, b.w, b.d, 1.0);
+          } else {
+            const def = DEFAULT_BUILDINGS.find(item => item.type === b.type) || DEFAULT_BUILDINGS[0];
+            drawIsoBlockBuilding(ctx, b.gx, b.gy, b.level, b.w, b.d, def.height, {
+              top: def.colorTop, left: def.colorLeft, right: def.colorRight
+            }, 1.0);
+          }
+        }
+      });
+    }
+
+    // 4. 園子裡散步的小人（圓點小人，走路輕輕上下彈跳）
+    for (const v of worldMap.villagers) {
+      const cell = worldMap.getCell(Math.round(v.gx), Math.round(v.gy));
+      const lvl = cell ? cell.level : worldMap.treePos.level;
+      renderList.push({
+        sortKey: v.gx + v.gy + 0.25,
+        draw: () => {
+          const p = gridToWorld(v.gx, v.gy, lvl);
+          const isMoving = v.pauseTimer <= 0;
+          const hop = (gameState.animationEnabled && isMoving) ? Math.abs(Math.sin(v.stepPhase)) * 3.2 : 0;
+
+          // 腳下小陰影
+          ctx.fillStyle = 'rgba(35, 25, 12, 0.28)';
+          ctx.beginPath();
+          ctx.ellipse(p.x + 1.5, p.y + 1.5, 3.6, 1.9, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 身體圓點
+          ctx.fillStyle = v.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y - 4.5 - hop, 3.6, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 頭部小圓點
+          ctx.fillStyle = '#FFE6C7';
+          ctx.beginPath();
+          ctx.arc(p.x, p.y - 9.2 - hop, 2.3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+    }
+
+    renderList.sort((a, b) => a.sortKey - b.sortKey);
+    for (const item of renderList) item.draw();
+  }
+
+  // 繪製偶爾飄落的樹葉、沙漠微風細沙與掠過地面的飛鳥影子
+  function drawAtmosphereEffects(ctx) {
+    if (!gameState.animationEnabled) return;
+
+    ctx.save();
+    // 1. 落葉
+    for (const lf of worldMap.leaves) {
+      ctx.fillStyle = lf.color;
+      ctx.beginPath();
+      ctx.ellipse(lf.x, lf.y, 2.3, 1.2, lf.rot, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 2. 沙漠細沙微風吹拂
+    for (const sg of worldMap.sandGusts) {
+      ctx.strokeStyle = `rgba(255, 238, 198, ${sg.alpha.toFixed(2)})`;
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      ctx.moveTo(sg.x, sg.y);
+      ctx.lineTo(sg.x + sg.len, sg.y + sg.len * 0.25);
+      ctx.stroke();
+    }
+
+    // 3. 鳥的影子偶爾掠過地面
+    const bs = worldMap.birdShadow;
+    if (bs.timer <= 0) {
+      ctx.fillStyle = 'rgba(42, 28, 14, 0.14)';
+      ctx.beginPath();
+      // 展翅剪影
+      ctx.moveTo(bs.x, bs.y);
+      ctx.quadraticCurveTo(bs.x - 9, bs.y - 6, bs.x - 16, bs.y - 1);
+      ctx.quadraticCurveTo(bs.x - 8, bs.y + 1, bs.x, bs.y + 3);
+      ctx.quadraticCurveTo(bs.x + 8, bs.y + 1, bs.x + 16, bs.y - 1);
+      ctx.quadraticCurveTo(bs.x + 9, bs.y - 6, bs.x, bs.y);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /**
+   * ============================================================================
+   * 10. 動畫狀態更新邏輯（dt 步進）
+   * ============================================================================
+   */
+  function updateSimulation(dt) {
+    // 更新開花變綠動畫（即使整體動畫開關關閉，擴張過渡仍完成狀態切換）
+    for (let i = runtime.bloomingAnimations.length - 1; i >= 0; i--) {
+      const anim = runtime.bloomingAnimations[i];
+      anim.elapsed += dt;
+      if (anim.elapsed >= anim.duration) {
+        // 正式寫入地形資料並重建離屏快取
+        const rng = mulberry32(gameState.seed + i * 777);
+        for (const cInfo of anim.cells) {
+          const cell = worldMap.getCell(cInfo.gx, cInfo.gy);
+          if (!cell) continue;
+          if (cell.biome !== 'river' && cell.biome !== 'sandbank') {
+            cell.biome = rng() > 0.75 ? 'forest' : 'grass';
+            cell.greenAmount = 1;
+            const ox = (rng() - 0.5) * 14;
+            const oy = (rng() - 0.5) * 7;
+            worldMap.props.push({ type: 'grassTuft', gx: cell.gx, gy: cell.gy, ox, oy, scale: 0.9 + rng() * 0.4 });
+            if (rng() < 0.45) {
+              worldMap.props.push({ type: 'flower', gx: cell.gx, gy: cell.gy, ox: -ox * 0.6, oy: -oy * 0.6, color: '#FFF4B8', scale: 0.9 });
+            }
+          }
+        }
+        terrainCache.dirty = true;
+        runtime.bloomingAnimations.splice(i, 1);
+      }
+    }
+
+    if (!gameState.animationEnabled) return;
+
+    // 1. 小人散步邏輯（沿小路徑緩慢移動、偶爾停下休息）
+    const pool = worldMap.walkNodes;
+    for (const v of worldMap.villagers) {
+      if (v.pauseTimer > 0) {
+        v.pauseTimer -= dt;
+        if (v.pauseTimer <= 0 && pool.length > 0) {
+          const next = pool[Math.floor(Math.random() * pool.length)];
+          v.targetGx = next.gx;
+          v.targetGy = next.gy;
+        }
+      } else {
+        const dx = v.targetGx - v.gx;
+        const dy = v.targetGy - v.gy;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 0.08) {
+          v.gx = v.targetGx;
+          v.gy = v.targetGy;
+          v.pauseTimer = 1.4 + Math.random() * 2.6;
+        } else {
+          const speed = 0.85; // 慢速悠閒步行
+          v.gx += (dx / dist) * speed * dt;
+          v.gy += (dy / dist) * speed * dt;
+          v.stepPhase += dt * 9.5;
+        }
+      }
+    }
+
+    // 2. 偶爾落葉
+    if (worldMap.leaves.length < 7 && Math.random() < dt * 0.9) {
+      const tp = gridToWorld(worldMap.treePos.gx, worldMap.treePos.gy, worldMap.treePos.level);
+      worldMap.leaves.push({
+        x: tp.x + (Math.random() - 0.5) * 34,
+        y: tp.y - 42 + (Math.random() - 0.5) * 14,
+        vx: 6 + Math.random() * 8,
+        vy: 9 + Math.random() * 7,
+        rot: Math.random() * Math.PI,
+        life: 2.8 + Math.random() * 1.5,
+        color: Math.random() > 0.5 ? PALETTE.grassMid : '#D4B94E'
+      });
+    }
+    for (let i = worldMap.leaves.length - 1; i >= 0; i--) {
+      const lf = worldMap.leaves[i];
+      lf.x += lf.vx * dt + Math.sin(runtime.elapsed * 3 + i) * 4 * dt;
+      lf.y += lf.vy * dt;
+      lf.rot += dt * 1.8;
+      lf.life -= dt;
+      if (lf.life <= 0) worldMap.leaves.splice(i, 1);
+    }
+
+    // 3. 沙漠微風細沙
+    if (worldMap.sandGusts.length < 10 && Math.random() < dt * 1.6) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 220 + Math.random() * 340;
+      worldMap.sandGusts.push({
+        x: Math.cos(angle) * dist,
+        y: Math.sin(angle) * dist * 0.55,
+        vx: 36 + Math.random() * 22,
+        vy: 9 + Math.random() * 6,
+        len: 14 + Math.random() * 18,
+        alpha: 0.35,
+        life: 2.2
+      });
+    }
+    for (let i = worldMap.sandGusts.length - 1; i >= 0; i--) {
+      const sg = worldMap.sandGusts[i];
+      sg.x += sg.vx * dt;
+      sg.y += sg.vy * dt;
+      sg.life -= dt;
+      sg.alpha = Math.sin(clamp(sg.life / 2.2, 0, 1) * Math.PI) * 0.35;
+      if (sg.life <= 0) worldMap.sandGusts.splice(i, 1);
+    }
+
+    // 4. 鳥影偶爾掠過地面
+    const bs = worldMap.birdShadow;
+    if (bs.timer > 0) {
+      bs.timer -= dt;
+      if (bs.timer <= 0) {
+        bs.x = -520;
+        bs.y = -240 + (Math.random() - 0.5) * 260;
+      }
+    } else {
+      bs.x += bs.vx * dt;
+      bs.y += bs.vy * dt;
+      if (bs.x > 560) {
+        bs.timer = 7 + Math.random() * 8;
+      }
+    }
+  }
+
+  /**
+   * ============================================================================
+   * 11. 主渲染迴圈（支援分頁不可見時自動暫停）
+   * ============================================================================
+   */
+  function renderFrame(timestamp) {
+    if (!runtime.isTabVisible) {
+      runtime.lastTime = timestamp;
+      requestAnimationFrame(renderFrame);
+      return;
+    }
+
+    const dt = runtime.lastTime ? Math.min((timestamp - runtime.lastTime) / 1000, 0.05) : 0.016;
+    runtime.lastTime = timestamp;
+    runtime.elapsed += dt;
+
+    if (terrainCache.dirty) {
+      rebuildTerrainCache();
+    }
+
+    updateSimulation(dt);
+
+    const viewW = window.innerWidth;
+    const viewH = window.innerHeight;
+
+    ctx.save();
+    ctx.fillStyle = PALETTE.desertLight;
+    ctx.fillRect(0, 0, viewW, viewH);
+
+    // 套用攝影機平移與縮放（鏡頭固定不可旋轉）
+    ctx.translate(viewW * 0.5 + runtime.camera.x, viewH * 0.5 + runtime.camera.y);
+    ctx.scale(runtime.camera.zoom, runtime.camera.zoom);
+
+    // 1. 貼上離屏快取的靜態地形（一幀僅一次 drawImage，極致流暢）
+    ctx.drawImage(
+      terrainCache.canvas,
+      -terrainCache.offsetX,
+      -terrainCache.offsetY
+    );
+
+    // 2. 動態河流微浪與閃光
+    drawAnimatedRiver(ctx, runtime.elapsed);
+
+    // 3. 開花變綠過渡層
+    drawBloomingPatches(ctx);
+
+    // 4. 擴張候選虛線區
+    drawExpandCandidates(ctx, runtime.elapsed);
+
+    // 5. 深度排序的動態與靜態物件（草花、大樹、建築、小人）
+    drawSortedEntities(ctx, runtime.elapsed);
+
+    // 6. 拖曳放置建築時的格子檢核預覽
+    drawPlacementGridOverlay(ctx);
+
+    // 7. 落葉、沙漠微風與鳥影
+    drawAtmosphereEffects(ctx);
+
+    ctx.restore();
+    requestAnimationFrame(renderFrame);
+  }
+
+  /**
+   * ============================================================================
+   * 12. 滑鼠與手機觸控互動（拖曳鏡頭、滾輪／雙指縮放、點擊擴張地塊、拖放建築）
+   * ============================================================================
+   */
+  function getTouchDist(t1, t2) {
+    return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+  }
+
+  canvas.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+
+    // 若在擴張模式，檢查是否點中 3 塊候選地之一
+    if (runtime.expandMode) {
+      const g = screenToGrid(e.clientX, e.clientY);
+      for (const cand of runtime.expandCandidates) {
+        if (cand.cells.some(c => c.gx === g.gx && c.gy === g.gy)) {
+          triggerExpandPatch(cand);
+          return;
+        }
+      }
+    }
+
+    runtime.isDraggingMap = true;
+    runtime.dragStart = { x: e.clientX, y: e.clientY };
+    runtime.camStart = { x: runtime.camera.x, y: runtime.camera.y };
+  });
+
+  window.addEventListener('pointermove', (e) => {
+    // 若正在拖曳建築道具
+    if (runtime.draggingItem) {
+      const g = screenToGrid(e.clientX, e.clientY);
+      const valid = canPlaceBuilding(g.gx, g.gy, runtime.draggingItem.w, runtime.draggingItem.d);
+      runtime.hoverGrid = { gx: g.gx, gy: g.gy, valid };
+      return;
+    }
+
+    if (!runtime.isDraggingMap) return;
+    const dx = e.clientX - runtime.dragStart.x;
+    const dy = e.clientY - runtime.dragStart.y;
+    runtime.camera.x = clamp(runtime.camStart.x + dx, -900 * runtime.camera.zoom, 900 * runtime.camera.zoom);
+    runtime.camera.y = clamp(runtime.camStart.y + dy, -550 * runtime.camera.zoom, 550 * runtime.camera.zoom);
+  });
+
+  window.addEventListener('pointerup', (e) => {
+    runtime.isDraggingMap = false;
+
+    if (runtime.draggingItem) {
+      if (runtime.hoverGrid && runtime.hoverGrid.valid) {
+        placeBuilding(runtime.draggingItem, runtime.hoverGrid.gx, runtime.hoverGrid.gy);
+        showToast('建築已安放在園子裡');
+      } else if (runtime.hoverGrid) {
+        showToast('此處無法放置（需避開懸崖邊、河水與曠野）');
+      }
+      runtime.draggingItem = null;
+      runtime.hoverGrid = null;
+    }
+  });
+
+  // 滑鼠滾輪縮放
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.09 : 0.91;
+    runtime.camera.zoom = clamp(runtime.camera.zoom * factor, 0.55, 2.2);
+  }, { passive: false });
+
+  // 手機雙指縮放支援
+  canvas.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+      runtime.isDraggingMap = false;
+      runtime.pinchDist = getTouchDist(e.touches[0], e.touches[1]);
+      runtime.pinchZoomStart = runtime.camera.zoom;
+    }
+  }, { passive: true });
+
+  canvas.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2 && runtime.pinchDist > 0) {
+      e.preventDefault();
+      const newDist = getTouchDist(e.touches[0], e.touches[1]);
+      const scale = newDist / runtime.pinchDist;
+      runtime.camera.zoom = clamp(runtime.pinchZoomStart * scale, 0.55, 2.2);
+    }
+  }, { passive: false });
+
+  /**
+   * ============================================================================
+   * 13. UI 按鈕與建築元件列控制
+   * ============================================================================
+   */
+  const toastEl = document.getElementById('toast');
+  let toastTimer = null;
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+  }
+
+  function refreshPaletteBar() {
+    const bar = document.getElementById('paletteBar');
+    bar.innerHTML = '';
+
+    // 預設 3 個測試建築
+    DEFAULT_BUILDINGS.forEach((b) => {
+      const item = document.createElement('div');
+      item.className = 'palette-item';
+
+      // 產生小縮圖預覽
+      const thumb = document.createElement('canvas');
+      thumb.width = 64;
+      thumb.height = 64;
+      const tctx = thumb.getContext('2d');
+      tctx.translate(32, 42);
+      tctx.scale(0.55, 0.55);
+      drawIsoBlockBuilding(tctx, 0, 0, 0, b.w, b.d, b.height, {
+        top: b.colorTop, left: b.colorLeft, right: b.colorRight
+      }, 1);
+
+      const label = document.createElement('span');
+      label.textContent = b.label;
+      item.appendChild(thumb);
+      item.appendChild(label);
+
+      item.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        runtime.draggingItem = { type: b.type, w: b.w, d: b.d, spriteIndex: -1 };
+        const g = screenToGrid(e.clientX, e.clientY);
+        runtime.hoverGrid = { gx: g.gx, gy: g.gy, valid: canPlaceBuilding(g.gx, g.gy, b.w, b.d) };
+      });
+      bar.appendChild(item);
+    });
+
+    // 若使用者有上傳 3x3 元件表，一併列在下方可拖曳放置
+    runtime.customSprites.forEach((spCanvas, idx) => {
+      const item = document.createElement('div');
+      item.className = 'palette-item';
+      const img = document.createElement('img');
+      img.src = spCanvas.toDataURL();
+      const label = document.createElement('span');
+      label.textContent = `元件 #${idx + 1}`;
+      item.appendChild(img);
+      item.appendChild(label);
+
+      item.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        runtime.draggingItem = { type: 'customSprite', w: 1, d: 1, spriteIndex: idx };
+        const g = screenToGrid(e.clientX, e.clientY);
+        runtime.hoverGrid = { gx: g.gx, gy: g.gy, valid: canPlaceBuilding(g.gx, g.gy, 1, 1) };
+      });
+      bar.appendChild(item);
+    });
+  }
+
+  // 按鈕 1：換一塊地
+  document.getElementById('btnNewSeed').addEventListener('click', () => {
+    gameState.seed = Math.floor(100000 + Math.random() * 900000);
+    gameState.expandedPatches = [];
+    gameState.buildings = [];
+    runtime.expandMode = false;
+    runtime.expandCandidates = [];
+    runtime.bloomingAnimations = [];
+    document.getElementById('btnExpand').classList.remove('active');
+
+    worldMap.generate(gameState.seed);
+    terrainCache.dirty = true;
+    showToast(`已生成新地塊（種子 #${gameState.seed}）`);
+  });
+
+  // 按鈕 2：擴張
+  document.getElementById('btnExpand').addEventListener('click', (e) => {
+    runtime.expandMode = !runtime.expandMode;
+    e.currentTarget.classList.toggle('active', runtime.expandMode);
+    if (runtime.expandMode) {
+      runtime.expandCandidates = generateExpandCandidates();
+      showToast('請點擊一塊發光的虛線地塊來開墾');
+    } else {
+      runtime.expandCandidates = [];
+    }
+  });
+
+  // 按鈕 3：測試建築
+  document.getElementById('btnBuild').addEventListener('click', (e) => {
+    runtime.buildPaletteOpen = !runtime.buildPaletteOpen;
+    e.currentTarget.classList.toggle('active', runtime.buildPaletteOpen);
+    const bar = document.getElementById('paletteBar');
+    bar.classList.toggle('visible', runtime.buildPaletteOpen);
+    if (runtime.buildPaletteOpen) {
+      refreshPaletteBar();
+      showToast('拖曳下方建築到園子裡（綠色可放、紅色不可放）');
+    }
+  });
+
+  // 按鈕 4：上傳元件表（3x3 洋紅去背）
+  const spriteInput = document.getElementById('spriteInput');
+  document.getElementById('btnUpload').addEventListener('click', () => {
+    spriteInput.click();
+  });
+
+  spriteInput.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        runtime.customSprites = processSpriteSheet(img);
+        runtime.buildPaletteOpen = true;
+        document.getElementById('btnBuild').classList.add('active');
+        document.getElementById('paletteBar').classList.add('visible');
+        refreshPaletteBar();
+        showToast(`已載入並去背 ${runtime.customSprites.length} 個元件，可拖曳放置！`);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+    spriteInput.value = '';
+  });
+
+  // 按鈕 5：動畫開關
+  document.getElementById('btnAnim').addEventListener('click', (e) => {
+    gameState.animationEnabled = !gameState.animationEnabled;
+    e.currentTarget.classList.toggle('active', gameState.animationEnabled);
+    e.currentTarget.textContent = gameState.animationEnabled ? '動畫：開' : '動畫：關';
+  });
+
+  // 分頁不可見時自動暫停動畫省電
+  document.addEventListener('visibilitychange', () => {
+    runtime.isTabVisible = !document.hidden;
+  });
+
+  // 對外暴露狀態匯出接口，方便日後整合或除錯
+  window.exportGardenStateJSON = () => JSON.stringify(gameState, null, 2);
+
+  /**
+   * ============================================================================
+   * 14. 啟動初始化
+   * ============================================================================
+   */
+  worldMap.generate(gameState.seed);
+  rebuildTerrainCache();
+  refreshPaletteBar();
+  requestAnimationFrame(renderFrame);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,2153 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>從園子到聖城 — Islanders 風格低多邊形 3D 場景</title>
+  <style>
+    /* 基礎版面重置與字體設定 */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      background-color: #d9eef2;
+    }
+
+    #canvas-container {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* 頂部控制列：半透明白底毛玻璃質感 */
+    #ui-bar {
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      width: max-content;
+      max-width: calc(100vw - 20px);
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.78);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 999px;
+      box-shadow: 0 6px 24px rgba(26, 75, 85, 0.14), inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+    }
+
+    .btn-group {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(235, 243, 245, 0.85);
+      border-radius: 999px;
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .ui-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #466368;
+      padding: 0 6px 0 8px;
+      white-space: nowrap;
+    }
+
+    button {
+      border: none;
+      background: transparent;
+      color: #2f484d;
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 6px 11px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+      white-space: nowrap;
+      touch-action: manipulation;
+    }
+
+    button:hover {
+      background: rgba(255, 255, 255, 0.7);
+      color: #163338;
+    }
+
+    button.active {
+      background: #2b8a96;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(43, 138, 150, 0.32);
+    }
+
+    button.action-btn {
+      background: rgba(255, 255, 255, 0.9);
+      color: #266c75;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    }
+
+    button.action-btn:hover {
+      background: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    button.action-btn:active {
+      transform: translateY(0);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* 世界地圖浮動地名標籤 */
+    #labels-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 10;
+      overflow: hidden;
+    }
+
+    .map-label {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      padding: 4px 10px;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      color: #233c42;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      border-radius: 999px;
+      box-shadow: 0 3px 10px rgba(20, 50, 58, 0.16), inset 0 0 0 1px rgba(255, 255, 255, 0.9);
+      white-space: nowrap;
+      transition: opacity 0.25s ease;
+    }
+
+    .map-label::after {
+      content: "";
+      position: absolute;
+      bottom: -4px;
+      left: 50%;
+      transform: translateX(-50%) rotate(45deg);
+      width: 7px;
+      height: 7px;
+      background: rgba(255, 255, 255, 0.85);
+    }
+
+    .map-label.water-label {
+      background: rgba(26, 120, 134, 0.82);
+      color: #ffffff;
+      box-shadow: 0 3px 10px rgba(15, 65, 75, 0.22);
+    }
+
+    .map-label.water-label::after {
+      background: rgba(26, 120, 134, 0.82);
+    }
+
+    /* 左下角極簡操作提示與三角面數資訊 */
+    #footer-hint {
+      position: fixed;
+      bottom: 12px;
+      left: 14px;
+      z-index: 15;
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(8px);
+      border-radius: 999px;
+      font-size: 11.5px;
+      color: #3a565c;
+      pointer-events: none;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    }
+
+    @media (max-width: 768px) {
+      #ui-bar {
+        border-radius: 18px;
+        padding: 6px 8px;
+        gap: 4px;
+      }
+      button {
+        font-size: 11.5px;
+        padding: 5px 8px;
+      }
+      .ui-label {
+        display: none;
+      }
+      #footer-hint {
+        font-size: 10.5px;
+        bottom: 8px;
+        left: 8px;
+      }
+    }
+  </style>
+
+  <!-- Import Map 載入 Three.js @0.160 -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="canvas-container"></div>
+  <div id="labels-layer"></div>
+
+  <!-- 頂部控制列 -->
+  <div id="ui-bar">
+    <!-- 場景切換 -->
+    <div class="btn-group" role="group" aria-label="場景選擇">
+      <span class="ui-label">場景</span>
+      <button id="btn-scene-personal" class="active">個人區塊</button>
+      <button id="btn-scene-world">世界地圖</button>
+    </div>
+
+    <!-- 場景一專屬：三階段切換 -->
+    <div id="group-stages" class="btn-group" role="group" aria-label="成長階段">
+      <button id="btn-stage-1" class="active">1. 伊甸園</button>
+      <button id="btn-stage-2">2. 成長中</button>
+      <button id="btn-stage-3">3. 新耶路撒冷</button>
+    </div>
+
+    <!-- 場景一專屬：更換隨機種子 -->
+    <button id="btn-reseed" class="action-btn">換一塊地</button>
+
+    <!-- 視角切換 -->
+    <div class="btn-group" role="group" aria-label="視角角度">
+      <span class="ui-label">視角</span>
+      <button id="btn-angle-0">0°</button>
+      <button id="btn-angle-15" class="active">15°</button>
+      <button id="btn-angle-45">45°</button>
+    </div>
+
+    <!-- 動畫開關 -->
+    <button id="btn-anim" class="action-btn">動畫：開</button>
+  </div>
+
+  <div id="footer-hint">拖曳平移・滾輪或雙指縮放｜北朝上</div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    /**
+     * ============================================================================
+     * 1. 嚴格色票定義（完全遵照需求規格）
+     * ============================================================================
+     */
+    const PALETTE = {
+      deepSea: 0x1A8C99,      // 深海
+      nearShore: 0x33BDB9,    // 近岸
+      shoal: 0x7FE0CF,        // 淺灘
+      foam: 0xFFFFFF,         // 浪花
+      riverLake: 0x4FCFD0,    // 河、湖
+      sand: 0xF3E2A6,         // 沙岸
+      grass: 0x9CCB45,        // 草地
+      dryLand: 0xC3C85A,      // 乾地
+      forest: 0x4E8F48,       // 樹林
+      cliffBase: 0x5E7468,    // 懸崖側面（深灰綠）
+      limestone: 0xEFE6D2,    // 石灰岩
+      plateau: 0xEFA65A,      // 高原（暖橘）
+      redRock: 0xC8694A,      // 紅岩
+      desert: 0xF2C27C,       // 沙漠
+      mountain: 0x7C8A86,     // 高山
+      snow: 0xFFFFFF,         // 山頂雪
+      whiteStone: 0xF4EBDD,   // 白石牆
+      mudBrick: 0xD9B98C,     // 泥磚
+      wood: 0xC98B55,         // 木
+      redTile: 0xE86F51,      // 紅瓦
+      tealRoof: 0x3BB3BD,     // 藍綠屋頂
+      tentCloth: 0xFFFFFF     // 帳棚布
+    };
+
+    // 預先建立常用 THREE.Color 物件以加速頂點著色
+    const C = {};
+    for (const [k, v] of Object.entries(PALETTE)) {
+      C[k] = new THREE.Color(v);
+    }
+
+    /**
+     * ============================================================================
+     * 2. 種子偽隨機數與 2D Simplex / Value 雜訊工具
+     * ============================================================================
+     */
+    class SeededRandom {
+      constructor(seed = 12345) {
+        this.seed = seed % 2147483647;
+        if (this.seed <= 0) this.seed += 2147483646;
+      }
+      next() {
+        this.seed = (this.seed * 16807) % 2147483647;
+        return (this.seed - 1) / 2147483646;
+      }
+      range(min, max) {
+        return min + this.next() * (max - min);
+      }
+      int(min, max) {
+        return Math.floor(this.range(min, max + 1));
+      }
+    }
+
+    class Noise2D {
+      constructor(seed = 1) {
+        const rng = new SeededRandom(seed);
+        this.perm = new Uint8Array(512);
+        const p = new Uint8Array(256);
+        for (let i = 0; i < 256; i++) p[i] = i;
+        for (let i = 255; i > 0; i--) {
+          const j = Math.floor(rng.next() * (i + 1));
+          const tmp = p[i];
+          p[i] = p[j];
+          p[j] = tmp;
+        }
+        for (let i = 0; i < 512; i++) {
+          this.perm[i] = p[i & 255];
+        }
+      }
+
+      fade(t) {
+        return t * t * t * (t * (t * 6 - 15) + 10);
+      }
+
+      lerp(a, b, t) {
+        return a + t * (b - a);
+      }
+
+      grad(hash, x, y) {
+        const h = hash & 7;
+        const u = h < 4 ? x : y;
+        const v = h < 4 ? y : x;
+        return ((h & 1) ? -u : u) + ((h & 2) ? -2.0 * v : 2.0 * v) * 0.5;
+      }
+
+      noise(x, y) {
+        const X = Math.floor(x) & 255;
+        const Y = Math.floor(y) & 255;
+        const xf = x - Math.floor(x);
+        const yf = y - Math.floor(y);
+        const u = this.fade(xf);
+        const v = this.fade(yf);
+
+        const aa = this.perm[this.perm[X] + Y];
+        const ab = this.perm[this.perm[X] + Y + 1];
+        const ba = this.perm[this.perm[X + 1] + Y];
+        const bb = this.perm[this.perm[X + 1] + Y + 1];
+
+        const x1 = this.lerp(this.grad(aa, xf, yf), this.grad(ba, xf - 1, yf), u);
+        const x2 = this.lerp(this.grad(ab, xf, yf - 1), this.grad(bb, xf - 1, yf - 1), u);
+        return (this.lerp(x1, x2, v) + 1) * 0.5; // 映射至 [0, 1]
+      }
+
+      fbm(x, y, octaves = 3) {
+        let value = 0;
+        let amp = 0.5;
+        let freq = 1;
+        let norm = 0;
+        for (let i = 0; i < octaves; i++) {
+          value += amp * this.noise(x * freq, y * freq);
+          norm += amp;
+          amp *= 0.5;
+          freq *= 2.05;
+        }
+        return value / norm;
+      }
+    }
+
+    /**
+     * ============================================================================
+     * 3. 場景狀態與 Three.js 核心初始化
+     * ============================================================================
+     */
+    const state = {
+      sceneMode: 'personal', // 'personal' | 'world'
+      stage: 1,              // 1: 伊甸園, 2: 成長中, 3: 新耶路撒冷
+      seed: 2026,
+      azimuthDeg: 15,        // 0, 15, 45
+      targetAzimuthRad: THREE.MathUtils.degToRad(15),
+      currentAzimuthRad: THREE.MathUtils.degToRad(15),
+      animEnabled: true,
+      isTabVisible: true
+    };
+
+    const container = document.getElementById('canvas-container');
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      powerPreference: 'high-performance'
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.04;
+    container.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xdaf0f4);
+    scene.fog = new THREE.FogExp2(0xdaf0f4, 0.0085);
+
+    // 鏡頭設置：北朝上（-Z 為北，+Z 為南），從南方往北看，俯角 45 度
+    const camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.5, 320);
+
+    // OrbitControls：允許拖曳平移與雙指/滾輪縮放，禁止自由旋轉
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableRotate = false;
+    controls.enablePan = true;
+    controls.enableZoom = true;
+    controls.screenSpacePanning = false; // 水平面上平移
+    controls.panSpeed = 1.05;
+    controls.zoomSpeed = 0.95;
+    controls.minDistance = 14;
+    controls.maxDistance = 85;
+    controls.mouseButtons = {
+      LEFT: THREE.MOUSE.PAN,
+      MIDDLE: THREE.MOUSE.DOLLY,
+      RIGHT: THREE.MOUSE.PAN
+    };
+    controls.touches = {
+      ONE: THREE.TOUCH.PAN,
+      TWO: THREE.TOUCH.DOLLY_PAN
+    };
+
+    // 光照系統：西北方主平行光 + 半球光補暗面
+    const hemiLight = new THREE.HemisphereLight(0xf6fcff, 0x7b988e, 0.82);
+    hemiLight.position.set(0, 50, 0);
+    scene.add(hemiLight);
+
+    const dirLight = new THREE.DirectionalLight(0xfff8eb, 1.48);
+    // 西北（-X, +Y, -Z）照射下來
+    dirLight.position.set(-28, 42, -26);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 1024;
+    dirLight.shadow.mapSize.height = 1024;
+    dirLight.shadow.camera.near = 5;
+    dirLight.shadow.camera.far = 130;
+    const shadowBound = 34;
+    dirLight.shadow.camera.left = -shadowBound;
+    dirLight.shadow.camera.right = shadowBound;
+    dirLight.shadow.camera.top = shadowBound;
+    dirLight.shadow.camera.bottom = -shadowBound;
+    dirLight.shadow.bias = -0.0006;
+    scene.add(dirLight);
+
+    // 西北方向單位向量（用於計算懸崖朝向明暗）
+    const NW_LIGHT_DIR = new THREE.Vector3(-0.65, 0.45, -0.61).normalize();
+
+    // 場景根群組（每次切換場景或階段時清空重建）
+    let worldGroup = new THREE.Group();
+    scene.add(worldGroup);
+
+    // 儲存每幀需要更新動畫的物件清單
+    let animators = [];
+    // 儲存世界地圖浮動標籤的 3D 錨點
+    let mapLabelAnchors = [];
+
+    /**
+     * ============================================================================
+     * 4. 共用低多邊形材質與幾何產生器
+     * ============================================================================
+     */
+    const flatMatCache = new Map();
+    function getFlatMat(hexColor, options = {}) {
+      const key = `${hexColor}_${options.transparent || false}_${options.opacity || 1}`;
+      if (flatMatCache.has(key)) return flatMatCache.get(key);
+      const mat = new THREE.MeshStandardMaterial({
+        color: hexColor,
+        flatShading: true,
+        roughness: options.roughness ?? 0.85,
+        metalness: options.metalness ?? 0.02,
+        transparent: options.transparent ?? false,
+        opacity: options.opacity ?? 1.0,
+        side: options.side ?? THREE.FrontSide
+      });
+      flatMatCache.set(key, mat);
+      return mat;
+    }
+
+    const vertexColorMat = new THREE.MeshStandardMaterial({
+      vertexColors: true,
+      flatShading: true,
+      roughness: 0.88,
+      metalness: 0.02
+    });
+
+    /**
+     * 階梯量化函式：產生台地平台與陡峭懸崖
+     */
+    function terraceHeight(rawH, stepSize = 0.65, sharpness = 0.78) {
+      const scaled = rawH / stepSize;
+      const base = Math.floor(scaled);
+      const frac = scaled - base;
+      // 使用平滑階躍函數讓平台平坦、邊緣陡峭形成懸崖
+      let smoothFrac = 0;
+      if (frac > sharpness) {
+        const t = (frac - sharpness) / (1 - sharpness);
+        smoothFrac = t * t * (3 - 2 * t);
+      }
+      return (base + smoothFrac) * stepSize;
+    }
+
+    /**
+     * 為非索引低多邊形地形網格計算頂點色（依據面法線區分平台與懸崖朝向明暗）
+     */
+    function applyLowPolyTerrainColors(geometry, colorResolver) {
+      const pos = geometry.attributes.position;
+      const count = pos.count;
+      const colors = new Float32Array(count * 3);
+
+      const vA = new THREE.Vector3();
+      const vB = new THREE.Vector3();
+      const vC = new THREE.Vector3();
+      const cb = new THREE.Vector3();
+      const ab = new THREE.Vector3();
+      const centroid = new THREE.Vector3();
+      const tmpColor = new THREE.Color();
+
+      for (let i = 0; i < count; i += 3) {
+        vA.fromBufferAttribute(pos, i);
+        vB.fromBufferAttribute(pos, i + 1);
+        vC.fromBufferAttribute(pos, i + 2);
+
+        cb.subVectors(vC, vB);
+        ab.subVectors(vA, vB);
+        cb.cross(ab).normalize(); // 面法線
+
+        centroid.copy(vA).add(vB).add(vC).multiplyScalar(1 / 3);
+
+        // slope: 1 表示完全水平平台，0 表示完全垂直懸崖
+        const slope = Math.max(0, cb.y);
+        const isCliff = slope < 0.72;
+
+        if (isCliff) {
+          // 懸崖側面（深灰綠 #5E7468），依朝向西北光照方向調整明暗
+          const facingNW = cb.dot(NW_LIGHT_DIR); // [-1, 1]
+          const shade = THREE.MathUtils.clamp(0.88 + facingNW * 0.34, 0.56, 1.24);
+          tmpColor.copy(C.cliffBase).multiplyScalar(shade);
+        } else {
+          // 平台表面：由各場景專屬色彩規則決定
+          colorResolver(centroid.x, centroid.y, centroid.z, cb, tmpColor);
+        }
+
+        for (let k = 0; k < 3; k++) {
+          colors[(i + k) * 3] = tmpColor.r;
+          colors[(i + k) * 3 + 1] = tmpColor.g;
+          colors[(i + k) * 3 + 2] = tmpColor.b;
+        }
+      }
+
+      geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      geometry.computeVertexNormals();
+    }
+
+    /**
+     * ============================================================================
+     * 5. InstancedMesh 批次裝飾建構器（樹、果樹、花叢、Q版小人、飛鳥、魚）
+     * ============================================================================
+     */
+    function createInstancedTrees(parent, treeList, rng, isFruitTree = false) {
+      if (treeList.length === 0) return;
+
+      // 樹幹幾何體
+      const trunkGeo = new THREE.CylinderGeometry(0.08, 0.14, 0.65, 5);
+      trunkGeo.translate(0, 0.32, 0);
+      const trunkMesh = new THREE.InstancedMesh(trunkGeo, getFlatMat(PALETTE.wood), treeList.length);
+      trunkMesh.castShadow = true;
+      trunkMesh.receiveShadow = true;
+
+      // 樹冠低多邊形幾何體（雙層二十面體融合感）
+      const crownGeo = new THREE.IcosahedronGeometry(0.55, 0);
+      crownGeo.scale(1.0, 1.15, 1.0);
+      crownGeo.translate(0, 0.92, 0);
+      const crownMat = getFlatMat(PALETTE.forest);
+      const crownMesh = new THREE.InstancedMesh(crownGeo, crownMat, treeList.length);
+      crownMesh.castShadow = true;
+      crownMesh.receiveShadow = true;
+
+      // 若為果樹，額外建立紅瓦色果實 InstancedMesh
+      let fruitMesh = null;
+      if (isFruitTree) {
+        const fruitGeo = new THREE.IcosahedronGeometry(0.085, 0);
+        fruitMesh = new THREE.InstancedMesh(fruitGeo, getFlatMat(PALETTE.redTile), treeList.length * 3);
+      }
+
+      const dummy = new THREE.Object3D();
+      const colorTint = new THREE.Color();
+      const baseData = [];
+
+      treeList.forEach((item, idx) => {
+        const s = item.scale ?? rng.range(0.75, 1.25);
+        const rotY = rng.range(0, Math.PI * 2);
+
+        dummy.position.set(item.x, item.y, item.z);
+        dummy.rotation.set(0, rotY, 0);
+        dummy.scale.set(s, s, s);
+        dummy.updateMatrix();
+        trunkMesh.setMatrixAt(idx, dummy.matrix);
+        crownMesh.setMatrixAt(idx, dummy.matrix);
+
+        // 樹冠色澤微調（在樹林綠與草地綠之間柔和變化）
+        colorTint.copy(C.forest).lerp(C.grass, rng.range(0, 0.35));
+        crownMesh.setColorAt(idx, colorTint);
+
+        baseData.push({
+          x: item.x,
+          y: item.y,
+          z: item.z,
+          s,
+          rotY,
+          phase: rng.range(0, Math.PI * 2)
+        });
+
+        if (fruitMesh) {
+          for (let f = 0; f < 3; f++) {
+            const ang = rotY + (f * Math.PI * 2) / 3;
+            dummy.position.set(
+              item.x + Math.cos(ang) * 0.42 * s,
+              item.y + (0.85 + (f % 2) * 0.16) * s,
+              item.z + Math.sin(ang) * 0.42 * s
+            );
+            dummy.scale.set(s, s, s);
+            dummy.updateMatrix();
+            fruitMesh.setMatrixAt(idx * 3 + f, dummy.matrix);
+          }
+        }
+      });
+
+      trunkMesh.instanceMatrix.needsUpdate = true;
+      crownMesh.instanceMatrix.needsUpdate = true;
+      if (crownMesh.instanceColor) crownMesh.instanceColor.needsUpdate = true;
+      if (fruitMesh) fruitMesh.instanceMatrix.needsUpdate = true;
+
+      parent.add(trunkMesh, crownMesh);
+      if (fruitMesh) parent.add(fruitMesh);
+
+      // 微風輕搖動畫
+      animators.push((time) => {
+        for (let i = 0; i < baseData.length; i++) {
+          const d = baseData[i];
+          const swayX = Math.sin(time * 1.4 + d.phase) * 0.045;
+          const swayZ = Math.cos(time * 1.15 + d.phase) * 0.045;
+          dummy.position.set(d.x, d.y, d.z);
+          dummy.rotation.set(swayX, d.rotY, swayZ);
+          dummy.scale.set(d.s, d.s, d.s);
+          dummy.updateMatrix();
+          crownMesh.setMatrixAt(i, dummy.matrix);
+        }
+        crownMesh.instanceMatrix.needsUpdate = true;
+      });
+    }
+
+    /**
+     * 花草叢 InstancedMesh
+     */
+    function createInstancedFoliage(parent, spotList, rng) {
+      if (spotList.length === 0) return;
+      const geo = new THREE.DodecahedronGeometry(0.18, 0);
+      geo.scale(1.2, 0.75, 1.2);
+      geo.translate(0, 0.1, 0);
+      const mat = getFlatMat(PALETTE.grass);
+      const mesh = new THREE.InstancedMesh(geo, mat, spotList.length);
+      mesh.receiveShadow = true;
+
+      const dummy = new THREE.Object3D();
+      const tint = new THREE.Color();
+      const flowerColors = [C.grass, C.forest, C.redTile, C.limestone, C.plateau];
+      const baseData = [];
+
+      spotList.forEach((p, idx) => {
+        const s = rng.range(0.65, 1.25);
+        const rot = rng.range(0, Math.PI * 2);
+        dummy.position.set(p.x, p.y, p.z);
+        dummy.rotation.set(0, rot, 0);
+        dummy.scale.set(s, s, s);
+        dummy.updateMatrix();
+        mesh.setMatrixAt(idx, dummy.matrix);
+
+        // 70% 綠草叢，30% 點綴小花叢
+        const col = rng.next() < 0.7
+          ? flowerColors[rng.int(0, 1)]
+          : flowerColors[rng.int(2, 4)];
+        tint.copy(col);
+        mesh.setColorAt(idx, tint);
+        baseData.push({ x: p.x, y: p.y, z: p.z, s, rot, phase: rng.range(0, 6.28) });
+      });
+
+      mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+      parent.add(mesh);
+
+      animators.push((time) => {
+        for (let i = 0; i < baseData.length; i++) {
+          const d = baseData[i];
+          const tilt = Math.sin(time * 2.1 + d.phase) * 0.08;
+          dummy.position.set(d.x, d.y, d.z);
+          dummy.rotation.set(tilt, d.rot, -tilt * 0.7);
+          dummy.scale.set(d.s, d.s, d.s);
+          dummy.updateMatrix();
+          mesh.setMatrixAt(i, dummy.matrix);
+        }
+        mesh.instanceMatrix.needsUpdate = true;
+      });
+    }
+
+    /**
+     * 飛鳥群 InstancedMesh（偶爾成群掠過天際）
+     */
+    function createFlockOfBirds(parent, count = 7, areaRadius = 22, heightBase = 9.5) {
+      // 展翅 V 形低多邊形飛鳥
+      const birdGeo = new THREE.BufferGeometry();
+      const vertices = new Float32Array([
+        0, 0, 0.18,   -0.32, 0.08, -0.08,   0, 0.02, -0.05,
+        0, 0, 0.18,    0, 0.02, -0.05,      0.32, 0.08, -0.08
+      ]);
+      birdGeo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+      birdGeo.computeVertexNormals();
+
+      const birdMesh = new THREE.InstancedMesh(
+        birdGeo,
+        getFlatMat(PALETTE.whiteStone, { side: THREE.DoubleSide }),
+        count
+      );
+      parent.add(birdMesh);
+
+      const dummy = new THREE.Object3D();
+      const offsets = Array.from({ length: count }, (_, i) => ({
+        dx: (i - count / 2) * 0.75,
+        dy: Math.sin(i * 1.3) * 0.35,
+        dz: Math.abs(i - count / 2) * 0.55,
+        flapPhase: i * 0.9
+      }));
+
+      animators.push((time) => {
+        // 每 18 秒循環一次掠過天空
+        const cycle = (time * 0.065) % 1.0;
+        const angle = 0.55; // 東北向西南斜飛
+        const dist = (cycle - 0.5) * areaRadius * 2.6;
+        const centerX = Math.cos(angle) * dist;
+        const centerZ = Math.sin(angle) * dist - 2;
+
+        for (let i = 0; i < count; i++) {
+          const o = offsets[i];
+          const flap = Math.sin(time * 9 + o.flapPhase) * 0.25;
+          dummy.position.set(
+            centerX + o.dx,
+            heightBase + o.dy + Math.sin(time * 1.5 + i) * 0.15,
+            centerZ + o.dz
+          );
+          dummy.rotation.set(0, angle + Math.PI * 0.5, flap);
+          dummy.scale.set(1, 1 + flap * 0.5, 1);
+          dummy.updateMatrix();
+          birdMesh.setMatrixAt(i, dummy.matrix);
+        }
+        birdMesh.instanceMatrix.needsUpdate = true;
+      });
+    }
+
+    /**
+     * 飄落樹葉粒子（輕柔緩慢）
+     */
+    function createFallingLeaves(parent, origins) {
+      if (origins.length === 0) return;
+      const count = Math.min(14, origins.length * 4);
+      const leafGeo = new THREE.TetrahedronGeometry(0.065, 0);
+      leafGeo.scale(1.4, 0.3, 1.0);
+      const leafMesh = new THREE.InstancedMesh(leafGeo, getFlatMat(PALETTE.plateau), count);
+      parent.add(leafMesh);
+
+      const dummy = new THREE.Object3D();
+      const leaves = Array.from({ length: count }, (_, i) => {
+        const orig = origins[i % origins.length];
+        return {
+          ox: orig.x,
+          oy: orig.y + 1.2,
+          oz: orig.z,
+          phase: (i / count) * 10
+        };
+      });
+
+      animators.push((time) => {
+        for (let i = 0; i < count; i++) {
+          const l = leaves[i];
+          const t = (time * 0.28 + l.phase) % 1.0;
+          const y = l.oy - t * 1.15;
+          const driftX = Math.sin(time * 1.5 + l.phase * 3) * 0.35 + t * 0.25;
+          const driftZ = Math.cos(time * 1.3 + l.phase * 2) * 0.35;
+          dummy.position.set(l.ox + driftX, y, l.oz + driftZ);
+          dummy.rotation.set(time * 1.8 + i, time * 1.2, time * 0.9);
+          const s = t > 0.85 ? (1 - t) / 0.15 : 1;
+          dummy.scale.setScalar(Math.max(0.01, s));
+          dummy.updateMatrix();
+          leafMesh.setMatrixAt(i, dummy.matrix);
+        }
+        leafMesh.instanceMatrix.needsUpdate = true;
+      });
+    }
+
+    /**
+     * 炊煙粒子系統（會幕或小屋升起淡淡白煙）
+     */
+    function createChimneySmoke(parent, vents) {
+      if (vents.length === 0) return;
+      const puffsPerVent = 5;
+      const total = vents.length * puffsPerVent;
+      const smokeGeo = new THREE.IcosahedronGeometry(0.14, 0);
+      const smokeMat = getFlatMat(PALETTE.tentCloth, { transparent: true, opacity: 0.55 });
+      const smokeMesh = new THREE.InstancedMesh(smokeGeo, smokeMat, total);
+      parent.add(smokeMesh);
+
+      const dummy = new THREE.Object3D();
+      animators.push((time) => {
+        let idx = 0;
+        for (let v = 0; v < vents.length; v++) {
+          const vent = vents[v];
+          for (let p = 0; p < puffsPerVent; p++) {
+            const prog = (time * 0.24 + p / puffsPerVent + v * 0.31) % 1.0;
+            const y = vent.y + prog * 1.85;
+            const driftX = Math.sin(time * 0.9 + prog * 4 + v) * 0.18 + prog * 0.22;
+            const driftZ = Math.cos(time * 0.8 + prog * 3) * 0.15;
+            const scale = Math.sin(prog * Math.PI) * 1.15;
+            dummy.position.set(vent.x + driftX, y, vent.z + driftZ);
+            dummy.rotation.set(prog * 2, prog * 1.5, 0);
+            dummy.scale.setScalar(Math.max(0.01, scale));
+            dummy.updateMatrix();
+            smokeMesh.setMatrixAt(idx++, dummy.matrix);
+          }
+        }
+        smokeMesh.instanceMatrix.needsUpdate = true;
+      });
+    }
+
+    /**
+     * 雲影緩慢飄過地面（半透明深灰綠軟雲影平面）
+     */
+    function createCloudShadows(parent, span = 38) {
+      const cloudGroup = new THREE.Group();
+      const cloudMat = new THREE.MeshBasicMaterial({
+        color: 0x3b595e,
+        transparent: true,
+        opacity: 0.085,
+        depthWrite: false
+      });
+
+      const clouds = [];
+      for (let i = 0; i < 4; i++) {
+        const geo = new THREE.CircleGeometry(4.2 + (i % 2) * 1.8, 7);
+        geo.rotateX(-Math.PI / 2);
+        geo.scale(1.5, 1, 0.9);
+        const mesh = new THREE.Mesh(geo, cloudMat);
+        mesh.position.set(-span * 0.5 + i * 11, 4.8, -10 + i * 7);
+        cloudGroup.add(mesh);
+        clouds.push({ mesh, speed: 0.55 + i * 0.12, startX: mesh.position.x });
+      }
+      parent.add(cloudGroup);
+
+      animators.push((time) => {
+        for (const c of clouds) {
+          c.mesh.position.x += c.speed * 0.016;
+          if (c.mesh.position.x > span * 0.65) {
+            c.mesh.position.x = -span * 0.65;
+          }
+        }
+      });
+    }
+
+    /**
+     * ============================================================================
+     * 6. 場景一：個人區塊「從園子到聖城」（林前 3:9；創 2 → 啟 21–22）
+     * ============================================================================
+     */
+    function buildPersonalScene(stage, seed) {
+      const rng = new SeededRandom(seed);
+      const noise = new Noise2D(seed);
+      const riverNoise = new Noise2D(seed + 99);
+
+      // 依階段決定地塊規模半徑
+      const radiusMap = { 1: 8.8, 2: 12.6, 3: 15.8 };
+      const maxRadius = radiusMap[stage];
+
+      // 河流中心線函數（階段 3 新耶路撒冷時，城內河道筆直貫穿南北，城外微彎）
+      const riverAmp = stage === 3 ? 0.55 : rng.range(1.6, 2.8);
+      const riverFreq = rng.range(0.14, 0.22);
+      const riverPhase = rng.range(0, Math.PI * 2);
+
+      function getRiverX(z) {
+        if (stage === 3 && Math.abs(z) < 7.2) {
+          return Math.sin(z * 0.12) * 0.18; // 聖城內生命河筆直明亮
+        }
+        const n = (riverNoise.noise(z * 0.08 + 5, 1.5) - 0.5) * 1.8;
+        return Math.sin(z * riverFreq + riverPhase) * riverAmp + n;
+      }
+
+      // 高度場查詢函式（供地形網格與上方建築精準貼地使用）
+      function samplePersonalTerrain(x, z) {
+        const rx = getRiverX(z);
+        const distToRiver = Math.abs(x - rx);
+
+        // 地塊外輪廓：沿著河流南北拉長，加上低頻雜訊形成自然不規則稜角邊界
+        const angle = Math.atan2(z * 0.82, x * 1.15);
+        const edgeJitter = (noise.fbm(Math.cos(angle) * 1.8 + 4, Math.sin(angle) * 1.8 + 4, 3) - 0.5) * 3.4;
+        const radialDist = Math.hypot(x * 1.12, z * 0.84);
+        const insideMask = maxRadius + edgeJitter - radialDist;
+
+        if (insideMask < 0) {
+          return { inside: false, height: -0.6, distToRiver, rx };
+        }
+
+        // 基礎台地高度（外圍微高、河谷低窪）
+        const rawN = noise.fbm(x * 0.11 + 10, z * 0.11 + 10, 3);
+        let baseH = 0.55 + rawN * 1.65 + Math.max(0, distToRiver - 2.2) * 0.14;
+
+        // 階段 3 新耶路撒冷中央城區平整高台
+        if (stage === 3 && Math.abs(x) < 7.6 && Math.abs(z) < 7.6) {
+          baseH = 1.25;
+        } else if (stage === 2 && Math.hypot(x - 2.6, z + 0.5) < 3.4) {
+          // 階段 2 會幕區平緩高地
+          baseH = 1.15;
+        } else if (stage === 1 && Math.hypot(x, z) < 3.0) {
+          // 階段 1 園子中央微高平台
+          baseH = 1.15;
+        }
+
+        let h = terraceHeight(baseH, 0.58, 0.76);
+
+        // 河道下切
+        const riverHalfWidth = stage === 3 ? 1.05 : 0.92;
+        if (distToRiver < riverHalfWidth) {
+          h = 0.18;
+        } else if (distToRiver < riverHalfWidth + 0.65) {
+          h = Math.min(h, 0.58);
+        }
+
+        return { inside: true, height: h, distToRiver, rx };
+      }
+
+      // 1. 建構微縮模型台地頂面與懸崖側壁（有厚度的桌上模型感）
+      const gridRes = 58;
+      const span = 34;
+      const step = span / gridRes;
+      const positions = [];
+
+      // 產生不規則抖動網格點，消除整齊方格感
+      const gridPts = [];
+      for (let iz = 0; iz <= gridRes; iz++) {
+        const row = [];
+        for (let ix = 0; ix <= gridRes; ix++) {
+          const bx = -span / 2 + ix * step;
+          const bz = -span / 2 + iz * step;
+          const jx = (noise.noise(ix * 0.7, iz * 0.7) - 0.5) * step * 0.55;
+          const jz = (noise.noise(ix * 0.7 + 31, iz * 0.7 + 31) - 0.5) * step * 0.55;
+          const x = bx + jx;
+          const z = bz + jz;
+          const info = samplePersonalTerrain(x, z);
+          row.push({ x, z, ...info });
+        }
+        gridPts.push(row);
+      }
+
+      const baseFloorY = -0.75; // 模型底座底面高度
+
+      function pushTri(a, b, c) {
+        positions.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z);
+      }
+
+      for (let iz = 0; iz < gridRes; iz++) {
+        for (let ix = 0; ix < gridRes; ix++) {
+          const p00 = gridPts[iz][ix];
+          const p10 = gridPts[iz][ix + 1];
+          const p01 = gridPts[iz + 1][ix];
+          const p11 = gridPts[iz + 1][ix + 1];
+
+          const inCount = (p00.inside ? 1 : 0) + (p10.inside ? 1 : 0) + (p01.inside ? 1 : 0) + (p11.inside ? 1 : 0);
+          if (inCount === 0) continue;
+
+          const v00 = { x: p00.x, y: p00.inside ? p00.height : baseFloorY, z: p00.z };
+          const v10 = { x: p10.x, y: p10.inside ? p10.height : baseFloorY, z: p10.z };
+          const v01 = { x: p01.x, y: p01.inside ? p01.height : baseFloorY, z: p01.z };
+          const v11 = { x: p11.x, y: p11.inside ? p11.height : baseFloorY, z: p11.z };
+
+          // 交錯對角線分割讓低多邊形三角面更自然
+          if ((ix + iz) % 2 === 0) {
+            pushTri(v00, v01, v10);
+            pushTri(v10, v01, v11);
+          } else {
+            pushTri(v00, v01, v11);
+            pushTri(v00, v11, v10);
+          }
+        }
+      }
+
+      const terrainGeo = new THREE.BufferGeometry();
+      terrainGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+
+      applyLowPolyTerrainColors(terrainGeo, (cx, cy, cz, normal, outColor) => {
+        const rx = getRiverX(cz);
+        const distR = Math.abs(cx - rx);
+        if (cy < 0.35 || distR < 0.98) {
+          outColor.copy(C.sand); // 河床與沙岸
+        } else if (stage === 3 && Math.abs(cx) < 7.2 && Math.abs(cz) < 7.2) {
+          outColor.copy(C.limestone); // 聖城白石鋪面
+        } else if (cy > 1.75) {
+          outColor.copy(C.dryLand); // 較高台地呈現乾地暖黃綠
+        } else {
+          outColor.copy(C.grass); // 肥沃草地
+        }
+      });
+
+      const terrainMesh = new THREE.Mesh(terrainGeo, vertexColorMat);
+      terrainMesh.receiveShadow = true;
+      terrainMesh.castShadow = true;
+      worldGroup.add(terrainMesh);
+
+      // 2. 四周淡淡水面與微縮模型底座托盤
+      const ambientWaterGeo = new THREE.PlaneGeometry(76, 76, 24, 24);
+      ambientWaterGeo.rotateX(-Math.PI / 2);
+      const ambientWaterMat = getFlatMat(PALETTE.shoal, { transparent: true, opacity: 0.72 });
+      const ambientWater = new THREE.Mesh(ambientWaterGeo, ambientWaterMat);
+      ambientWater.position.y = -0.35;
+      worldGroup.add(ambientWater);
+
+      // 河流流動水面（沿河流中心線建立連續低多邊形河帶）
+      const riverSegs = 44;
+      const riverZMin = -maxRadius * 1.05;
+      const riverZMax = maxRadius * 1.05;
+      const riverPos = [];
+      const riverHalfW = stage === 3 ? 0.98 : 0.85;
+
+      for (let i = 0; i < riverSegs; i++) {
+        const z0 = THREE.MathUtils.lerp(riverZMin, riverZMax, i / riverSegs);
+        const z1 = THREE.MathUtils.lerp(riverZMin, riverZMax, (i + 1) / riverSegs);
+        const x0 = getRiverX(z0);
+        const x1 = getRiverX(z1);
+
+        const y0 = 0.44;
+        const y1 = 0.44;
+        riverPos.push(
+          x0 - riverHalfW, y0, z0,
+          x0 + riverHalfW, y0, z0,
+          x1 - riverHalfW, y1, z1,
+
+          x0 + riverHalfW, y0, z0,
+          x1 + riverHalfW, y1, z1,
+          x1 - riverHalfW, y1, z1
+        );
+      }
+      const riverGeo = new THREE.BufferGeometry();
+      riverGeo.setAttribute('position', new THREE.Float32BufferAttribute(riverPos, 3));
+      riverGeo.computeVertexNormals();
+      const riverMesh = new THREE.Mesh(riverGeo, getFlatMat(PALETTE.riverLake));
+      riverMesh.receiveShadow = true;
+      worldGroup.add(riverMesh);
+
+      // 河水輕微波動動畫
+      const baseRiverY = new Float32Array(riverPos.length / 3);
+      for (let i = 0; i < baseRiverY.length; i++) baseRiverY[i] = riverPos[i * 3 + 1];
+      animators.push((time) => {
+        const attr = riverMesh.geometry.attributes.position;
+        for (let i = 0; i < attr.count; i++) {
+          const z = attr.getZ(i);
+          attr.setY(i, baseRiverY[i] + Math.sin(time * 2.6 + z * 0.9) * 0.025);
+        }
+        attr.needsUpdate = true;
+      });
+
+      // 3. 依據階段建構專屬主題建築與物件
+      const treeSpots = [];
+      const fruitTreeSpots = [];
+      const foliageSpots = [];
+      const leafOrigins = [];
+      const smokeVents = [];
+      const walkWaypoints = [];
+
+      if (stage === 1) {
+        /**
+         * 【階段一：伊甸園】
+         * 泉源石堆湧出河流，中央一棵壯碩生命大樹，周圍花草與果樹
+         */
+        const springZ = -maxRadius * 0.72;
+        const springX = getRiverX(springZ);
+        // 泉源石灰岩疊石
+        for (let i = 0; i < 6; i++) {
+          const ang = (i / 6) * Math.PI * 2;
+          const rock = new THREE.Mesh(
+            new THREE.DodecahedronGeometry(rng.range(0.35, 0.58), 0),
+            getFlatMat(PALETTE.limestone)
+          );
+          rock.position.set(
+            springX + Math.cos(ang) * 0.95,
+            0.72,
+            springZ + Math.sin(ang) * 0.75
+          );
+          rock.castShadow = true;
+          rock.receiveShadow = true;
+          worldGroup.add(rock);
+        }
+
+        // 中央壯碩生命大樹（置於河岸高台中央）
+        const centerZ = 0.2;
+        const centerX = getRiverX(centerZ) + 1.95;
+        const centerInfo = samplePersonalTerrain(centerX, centerZ);
+        const bigTreeY = centerInfo.height;
+
+        const bigTrunk = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.24, 0.42, 1.65, 6),
+          getFlatMat(PALETTE.wood)
+        );
+        bigTrunk.position.set(centerX, bigTreeY + 0.8, centerZ);
+        bigTrunk.castShadow = true;
+        worldGroup.add(bigTrunk);
+
+        // 三團豐茂低多邊形大樹冠
+        const crownGroup = new THREE.Group();
+        crownGroup.position.set(centerX, bigTreeY + 1.85, centerZ);
+        const crownOffsets = [
+          [0, 0.35, 0, 1.25],
+          [-0.65, 0, 0.35, 0.95],
+          [0.65, 0.05, -0.3, 0.95]
+        ];
+        crownOffsets.forEach(([ox, oy, oz, r], i) => {
+          const cMesh = new THREE.Mesh(
+            new THREE.IcosahedronGeometry(r, 1),
+            getFlatMat(i === 0 ? PALETTE.forest : PALETTE.grass)
+          );
+          cMesh.position.set(ox, oy, oz);
+          cMesh.castShadow = true;
+          crownGroup.add(cMesh);
+        });
+        worldGroup.add(crownGroup);
+        leafOrigins.push({ x: centerX, y: bigTreeY + 1.6, z: centerZ });
+
+        // 大樹微風輕擺
+        animators.push((time) => {
+          crownGroup.rotation.z = Math.sin(time * 1.1) * 0.035;
+          crownGroup.rotation.x = Math.cos(time * 0.9) * 0.03;
+        });
+
+        // 周圍點綴果樹與花叢
+        for (let i = 0; i < 42; i++) {
+          const ang = rng.range(0, Math.PI * 2);
+          const rad = rng.range(1.8, maxRadius * 0.82);
+          const x = Math.cos(ang) * rad;
+          const z = Math.sin(ang) * rad;
+          const info = samplePersonalTerrain(x, z);
+          if (!info.inside || info.distToRiver < 1.35) continue;
+          if (Math.hypot(x - centerX, z - centerZ) < 1.85) continue;
+
+          if (i % 3 === 0) {
+            fruitTreeSpots.push({ x, y: info.height, z, scale: rng.range(0.85, 1.15) });
+            if (leafOrigins.length < 4) leafOrigins.push({ x, y: info.height + 0.5, z });
+          } else {
+            foliageSpots.push({ x, y: info.height, z });
+          }
+        }
+
+        // Q 版小人漫步路徑（繞著生命大樹與河岸）
+        walkWaypoints.push(
+          { x: centerX - 0.8, y: bigTreeY, z: centerZ + 1.8 },
+          { x: centerX + 1.7, y: bigTreeY, z: centerZ + 1.2 },
+          { x: centerX + 1.6, y: bigTreeY, z: centerZ - 1.5 },
+          { x: centerX - 0.6, y: bigTreeY, z: centerZ - 1.6 }
+        );
+      } else if (stage === 2) {
+        /**
+         * 【階段二：成長中】
+         * 田地、葡萄園、會幕（中央白色帳幕與外圍院子立柱）、泥磚小屋、一段城牆
+         */
+        // A. 會幕（位於河東平緩高地 (2.6, -0.5)）
+        const tabX = 2.6;
+        const tabZ = -0.5;
+        const tabY = samplePersonalTerrain(tabX, tabZ).height;
+
+        // 外院立柱圍欄（白石小柱）
+        const postGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.42, 5);
+        const postMat = getFlatMat(PALETTE.whiteStone);
+        const courtW = 3.2;
+        const courtD = 4.4;
+        for (let px = -courtW / 2; px <= courtW / 2; px += 0.64) {
+          for (const pz of [-courtD / 2, courtD / 2]) {
+            if (pz > 0 && Math.abs(px) < 0.5) continue; // 南側入口
+            const post = new THREE.Mesh(postGeo, postMat);
+            post.position.set(tabX + px, tabY + 0.21, tabZ + pz);
+            post.castShadow = true;
+            worldGroup.add(post);
+          }
+        }
+        for (let pz = -courtD / 2 + 0.64; pz < courtD / 2; pz += 0.64) {
+          for (const px of [-courtW / 2, courtW / 2]) {
+            const post = new THREE.Mesh(postGeo, postMat);
+            post.position.set(tabX + px, tabY + 0.21, tabZ + pz);
+            post.castShadow = true;
+            worldGroup.add(post);
+          }
+        }
+
+        // 中央白色帳幕（斜頂低多邊形帳棚）
+        const tentGeo = new THREE.ConeGeometry(0.95, 1.35, 4);
+        tentGeo.rotateY(Math.PI / 4);
+        tentGeo.scale(0.85, 0.78, 1.45);
+        const tentMesh = new THREE.Mesh(tentGeo, getFlatMat(PALETTE.tentCloth));
+        tentMesh.position.set(tabX, tabY + 0.52, tabZ - 0.35);
+        tentMesh.castShadow = true;
+        worldGroup.add(tentMesh);
+
+        // 祭壇炊煙
+        smokeVents.push({ x: tabX, y: tabY + 0.35, z: tabZ + 1.15 });
+
+        // B. 耕作田地與葡萄園（位於河西側）
+        const fieldX = -3.6;
+        const fieldZ = 1.6;
+        const fieldY = samplePersonalTerrain(fieldX, fieldZ).height;
+        for (let r = 0; r < 4; r++) {
+          const strip = new THREE.Mesh(
+            new THREE.BoxGeometry(2.4, 0.08, 0.32),
+            getFlatMat(r % 2 === 0 ? PALETTE.dryLand : PALETTE.plateau)
+          );
+          strip.position.set(fieldX, fieldY + 0.04, fieldZ - 0.9 + r * 0.55);
+          strip.receiveShadow = true;
+          worldGroup.add(strip);
+        }
+
+        // 葡萄園棚架（木柱 + 綠藤頂）
+        const vineX = -3.8;
+        const vineZ = -2.8;
+        const vineY = samplePersonalTerrain(vineX, vineZ).height;
+        for (let vx = -1.0; vx <= 1.0; vx += 1.0) {
+          const vineRow = new THREE.Mesh(
+            new THREE.BoxGeometry(0.45, 0.42, 2.2),
+            getFlatMat(PALETTE.forest)
+          );
+          vineRow.position.set(vineX + vx, vineY + 0.25, vineZ);
+          vineRow.castShadow = true;
+          worldGroup.add(vineRow);
+        }
+
+        // C. 幾間泥磚小屋（搭配木門與紅瓦/泥磚平頂）
+        const hutCoords = [
+          { x: 3.4, z: 3.4, rot: 0.3 },
+          { x: 4.8, z: 2.3, rot: -0.4 },
+          { x: -2.4, z: 4.3, rot: 0.15 },
+          { x: 1.8, z: -4.5, rot: -0.2 }
+        ];
+        hutCoords.forEach((h, idx) => {
+          const info = samplePersonalTerrain(h.x, h.z);
+          if (!info.inside || info.distToRiver < 1.3) return;
+          const hutGroup = new THREE.Group();
+          hutGroup.position.set(h.x, info.height, h.z);
+          hutGroup.rotation.y = h.rot;
+
+          const body = new THREE.Mesh(
+            new THREE.BoxGeometry(0.95, 0.65, 0.85),
+            getFlatMat(PALETTE.mudBrick)
+          );
+          body.position.y = 0.325;
+          body.castShadow = true;
+          body.receiveShadow = true;
+          hutGroup.add(body);
+
+          const roof = new THREE.Mesh(
+            new THREE.ConeGeometry(0.76, 0.42, 4),
+            getFlatMat(idx % 2 === 0 ? PALETTE.redTile : PALETTE.wood)
+          );
+          roof.rotation.y = Math.PI / 4;
+          roof.position.y = 0.85;
+          roof.castShadow = true;
+          hutGroup.add(roof);
+
+          worldGroup.add(hutGroup);
+          if (idx === 0) smokeVents.push({ x: h.x, y: info.height + 1.05, z: h.z });
+        });
+
+        // D. 一段防禦城牆（北側山坡上的一段白石城牆與角樓）
+        const wallZ = -5.6;
+        for (let wx = -2.8; wx <= 3.2; wx += 1.2) {
+          const info = samplePersonalTerrain(wx, wallZ);
+          if (!info.inside || info.distToRiver < 1.2) continue;
+          const seg = new THREE.Mesh(
+            new THREE.BoxGeometry(1.18, 0.88, 0.36),
+            getFlatMat(PALETTE.whiteStone)
+          );
+          seg.position.set(wx, info.height + 0.44, wallZ);
+          seg.castShadow = true;
+          worldGroup.add(seg);
+        }
+
+        // 周圍樹木與花叢
+        for (let i = 0; i < 45; i++) {
+          const ang = rng.range(0, Math.PI * 2);
+          const rad = rng.range(4.2, maxRadius * 0.86);
+          const x = Math.cos(ang) * rad;
+          const z = Math.sin(ang) * rad;
+          const info = samplePersonalTerrain(x, z);
+          if (!info.inside || info.distToRiver < 1.35) continue;
+          if (i % 2 === 0) {
+            treeSpots.push({ x, y: info.height, z, scale: rng.range(0.75, 1.15) });
+            if (leafOrigins.length < 3) leafOrigins.push({ x, y: info.height + 0.4, z });
+          } else {
+            foliageSpots.push({ x, y: info.height, z });
+          }
+        }
+
+        walkWaypoints.push(
+          { x: tabX - 1.9, y: tabY, z: tabZ + 2.5 },
+          { x: tabX + 0.2, y: tabY, z: tabZ + 2.8 },
+          { x: tabX + 2.1, y: tabY, z: tabZ + 1.6 },
+          { x: 1.5, y: tabY, z: 2.6 }
+        );
+      } else if (stage === 3) {
+        /**
+         * 【階段三：新耶路撒冷】
+         * 四方白石城牆，每邊三個門（共 12 門），生命河筆直貫穿中央，兩岸整齊生命樹與聖殿建築
+         */
+        const cityHalf = 6.6;
+        const cityY = 1.25;
+        const wallH = 1.15;
+        const wallThick = 0.44;
+        const gateOffsets = [-3.3, 0, 3.3]; // 每邊三個門
+
+        // 建立四方城牆（遇城門位置留出開口並加上藍綠屋頂門樓）
+        const buildWallSide = (isHorizontal, fixedCoord) => {
+          const segPts = [-cityHalf, -4.1, -2.5, -0.8, 0.8, 2.5, 4.1, cityHalf];
+          for (let i = 0; i < segPts.length - 1; i += 2) {
+            const a = segPts[i];
+            const b = segPts[i + 1];
+            const len = b - a;
+            const mid = (a + b) / 2;
+            const geo = isHorizontal
+              ? new THREE.BoxGeometry(len, wallH, wallThick)
+              : new THREE.BoxGeometry(wallThick, wallH, len);
+            const wall = new THREE.Mesh(geo, getFlatMat(PALETTE.whiteStone));
+            wall.position.set(
+              isHorizontal ? mid : fixedCoord,
+              cityY + wallH / 2,
+              isHorizontal ? fixedCoord : mid
+            );
+            wall.castShadow = true;
+            wall.receiveShadow = true;
+            worldGroup.add(wall);
+          }
+
+          // 每邊 3 座城門雙柱與門楣（共 12 門）
+          gateOffsets.forEach((gPos) => {
+            const gateGroup = new THREE.Group();
+            gateGroup.position.set(
+              isHorizontal ? gPos : fixedCoord,
+              cityY,
+              isHorizontal ? fixedCoord : gPos
+            );
+            if (!isHorizontal) gateGroup.rotation.y = Math.PI / 2;
+
+            const pillarGeo = new THREE.BoxGeometry(0.32, wallH + 0.35, 0.56);
+            const pL = new THREE.Mesh(pillarGeo, getFlatMat(PALETTE.whiteStone));
+            pL.position.set(-0.68, (wallH + 0.35) / 2, 0);
+            pL.castShadow = true;
+            const pR = pL.clone();
+            pR.position.x = 0.68;
+
+            const lintel = new THREE.Mesh(
+              new THREE.BoxGeometry(1.75, 0.28, 0.64),
+              getFlatMat(PALETTE.tealRoof)
+            );
+            lintel.position.set(0, wallH + 0.35, 0);
+            lintel.castShadow = true;
+
+            gateGroup.add(pL, pR, lintel);
+            worldGroup.add(gateGroup);
+          });
+        };
+
+        buildWallSide(true, -cityHalf); // 北牆（3門）
+        buildWallSide(true, cityHalf);  // 南牆（3門）
+        buildWallSide(false, -cityHalf); // 西牆（3門）
+        buildWallSide(false, cityHalf);  // 東牆（3門）
+
+        // 四角角樓
+        for (const cx of [-cityHalf, cityHalf]) {
+          for (const cz of [-cityHalf, cityHalf]) {
+            const tower = new THREE.Mesh(
+              new THREE.BoxGeometry(0.85, wallH + 0.65, 0.85),
+              getFlatMat(PALETTE.whiteStone)
+            );
+            tower.position.set(cx, cityY + (wallH + 0.65) / 2, cz);
+            tower.castShadow = true;
+            const cap = new THREE.Mesh(
+              new THREE.ConeGeometry(0.68, 0.45, 4),
+              getFlatMat(PALETTE.tealRoof)
+            );
+            cap.rotation.y = Math.PI / 4;
+            cap.position.set(cx, cityY + wallH + 0.85, cz);
+            worldGroup.add(tower, cap);
+          }
+        }
+
+        // 生命河兩岸整齊排列結實累累的生命樹（每側 6 棵）
+        for (let i = 0; i < 6; i++) {
+          const tz = -4.6 + i * 1.84;
+          const rx = getRiverX(tz);
+          fruitTreeSpots.push({ x: rx - 1.55, y: cityY, z: tz, scale: 0.92 });
+          fruitTreeSpots.push({ x: rx + 1.55, y: cityY, z: tz, scale: 0.92 });
+          if (i % 2 === 0) leafOrigins.push({ x: rx + 1.55, y: cityY + 0.6, z: tz });
+        }
+
+        // 城內兩側整齊潔白聖殿與居所建築（白石牆 + 藍綠/紅瓦屋頂）
+        const buildingPositions = [
+          { x: -3.8, z: -3.6, w: 1.5, h: 1.45, d: 1.4, roof: PALETTE.tealRoof },
+          { x: -3.8, z: 0.0,  w: 1.7, h: 1.75, d: 1.6, roof: PALETTE.tealRoof },
+          { x: -3.8, z: 3.6,  w: 1.5, h: 1.35, d: 1.4, roof: PALETTE.redTile },
+          { x: 3.8,  z: -3.6, w: 1.5, h: 1.35, d: 1.4, roof: PALETTE.redTile },
+          { x: 3.8,  z: 0.0,  w: 1.7, h: 1.75, d: 1.6, roof: PALETTE.tealRoof },
+          { x: 3.8,  z: 3.6,  w: 1.5, h: 1.45, d: 1.4, roof: PALETTE.tealRoof }
+        ];
+        buildingPositions.forEach((b) => {
+          const bGroup = new THREE.Group();
+          bGroup.position.set(b.x, cityY, b.z);
+
+          const base = new THREE.Mesh(
+            new THREE.BoxGeometry(b.w, b.h, b.d),
+            getFlatMat(PALETTE.whiteStone)
+          );
+          base.position.y = b.h / 2;
+          base.castShadow = true;
+          base.receiveShadow = true;
+
+          const top = new THREE.Mesh(
+            new THREE.ConeGeometry(Math.max(b.w, b.d) * 0.78, 0.65, 4),
+            getFlatMat(b.roof)
+          );
+          top.rotation.y = Math.PI / 4;
+          top.position.y = b.h + 0.32;
+          top.castShadow = true;
+
+          bGroup.add(base, top);
+          worldGroup.add(bGroup);
+        });
+
+        // 橫跨生命河的兩座白石拱橋
+        for (const bz of [-2.2, 2.2]) {
+          const bridge = new THREE.Mesh(
+            new THREE.BoxGeometry(2.3, 0.22, 0.75),
+            getFlatMat(PALETTE.whiteStone)
+          );
+          bridge.position.set(getRiverX(bz), cityY + 0.04, bz);
+          bridge.castShadow = true;
+          bridge.receiveShadow = true;
+          worldGroup.add(bridge);
+        }
+
+        // 城外綠野樹林
+        for (let i = 0; i < 36; i++) {
+          const ang = rng.range(0, Math.PI * 2);
+          const rad = rng.range(9.6, maxRadius * 0.88);
+          const x = Math.cos(ang) * rad;
+          const z = Math.sin(ang) * rad;
+          const info = samplePersonalTerrain(x, z);
+          if (!info.inside || info.distToRiver < 1.5) continue;
+          treeSpots.push({ x, y: info.height, z, scale: rng.range(0.8, 1.2) });
+        }
+
+        walkWaypoints.push(
+          { x: -2.2, y: cityY, z: 2.2 },
+          { x: 2.2,  y: cityY, z: 2.2 },
+          { x: 2.2,  y: cityY, z: -2.2 },
+          { x: -2.2, y: cityY, z: -2.2 }
+        );
+      }
+
+      // 批次建立植物與粒子
+      createInstancedTrees(worldGroup, treeSpots, rng, false);
+      createInstancedTrees(worldGroup, fruitTreeSpots, rng, true);
+      createInstancedFoliage(worldGroup, foliageSpots, rng);
+      createFallingLeaves(worldGroup, leafOrigins);
+      createChimneySmoke(worldGroup, smokeVents);
+      createFlockOfBirds(worldGroup, 6, maxRadius * 1.35, 7.5);
+      createCloudShadows(worldGroup, maxRadius * 2.2);
+
+      // 4. 場景一專屬微動畫：河裡小魚偶爾躍出水面
+      const fishGeo = new THREE.ConeGeometry(0.11, 0.36, 4);
+      fishGeo.rotateX(Math.PI / 2);
+      const fishMat = getFlatMat(PALETTE.tealRoof);
+      const fishMesh = new THREE.Mesh(fishGeo, fishMat);
+      worldGroup.add(fishMesh);
+
+      const fishZ = rng.range(-maxRadius * 0.3, maxRadius * 0.3);
+      const fishX = getRiverX(fishZ);
+      animators.push((time) => {
+        // 每 6.5 秒躍出一次
+        const cycle = (time * 0.16) % 1.0;
+        if (cycle < 0.24) {
+          const t = cycle / 0.24; // [0, 1]
+          fishMesh.visible = true;
+          const jumpY = 0.42 + Math.sin(t * Math.PI) * 0.85;
+          const jumpZ = fishZ + (t - 0.5) * 0.85;
+          fishMesh.position.set(getRiverX(jumpZ), jumpY, jumpZ);
+          fishMesh.rotation.x = -(0.5 - t) * 2.1;
+        } else {
+          fishMesh.visible = false;
+        }
+      });
+
+      // 5. 場景一專屬微動畫：2～4 個圓潤 Q 版小人沿小路慢走並偶爾駐足
+      if (walkWaypoints.length >= 3) {
+        const villagerCount = stage === 1 ? 2 : 3;
+        const villagers = [];
+
+        for (let v = 0; v < villagerCount; v++) {
+          const person = new THREE.Group();
+
+          // 圓潤小身軀（膠囊/圓柱柔和感）
+          const tunicColors = [PALETTE.tentCloth, PALETTE.plateau, PALETTE.tealRoof];
+          const body = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.11, 0.16, 0.34, 7),
+            getFlatMat(tunicColors[v % tunicColors.length])
+          );
+          body.position.y = 0.17;
+          body.castShadow = true;
+
+          // 可愛大圓頭（低多邊形球體）
+          const head = new THREE.Mesh(
+            new THREE.IcosahedronGeometry(0.17, 1),
+            getFlatMat(PALETTE.mudBrick)
+          );
+          head.position.y = 0.46;
+          head.castShadow = true;
+
+          person.add(body, head);
+          worldGroup.add(person);
+
+          villagers.push({
+            group: person,
+            progress: v * (walkWaypoints.length / villagerCount),
+            speed: 0.28 + v * 0.04,
+            pauseOffset: v * 2.3
+          });
+        }
+
+        animators.push((time) => {
+          const n = walkWaypoints.length;
+          for (const v of villagers) {
+            // 週期性駐足欣賞風景
+            const pauseWave = Math.sin(time * 0.55 + v.pauseOffset);
+            const isPaused = pauseWave > 0.72;
+            if (!isPaused) {
+              v.progress = (v.progress + 0.016 * v.speed) % n;
+            }
+
+            const idx0 = Math.floor(v.progress) % n;
+            const idx1 = (idx0 + 1) % n;
+            const frac = v.progress - Math.floor(v.progress);
+
+            const p0 = walkWaypoints[idx0];
+            const p1 = walkWaypoints[idx1];
+
+            const x = THREE.MathUtils.lerp(p0.x, p1.x, frac);
+            const y = THREE.MathUtils.lerp(p0.y, p1.y, frac);
+            const z = THREE.MathUtils.lerp(p0.z, p1.z, frac);
+
+            const bob = isPaused ? 0 : Math.abs(Math.sin(time * 7 + v.pauseOffset)) * 0.045;
+            v.group.position.set(x, y + bob, z);
+
+            const targetAngle = Math.atan2(p1.x - p0.x, p1.z - p0.z);
+            v.group.rotation.y = targetAngle;
+          }
+        });
+      }
+    }
+
+    /**
+     * ============================================================================
+     * 7. 場景二：世界地圖的一個區塊（以色列一帶，北朝上）
+     * ============================================================================
+     */
+    function buildWorldMapScene() {
+      const noise = new Noise2D(777);
+      const rng = new SeededRandom(777);
+
+      const width = 46;
+      const depth = 52;
+      const segX = 68;
+      const segZ = 76;
+
+      // 約旦河東西向蜿蜒路徑（介於北邊加利利海與南邊死海之間）
+      function getJordanRiverX(z) {
+        return 5.4 + Math.sin(z * 0.35) * 0.75 + (noise.noise(z * 0.2, 3.1) - 0.5) * 0.9;
+      }
+
+      // 地中海海岸線 X 座標（北窄南寬，符合真實以色列海岸斜度）
+      function getCoastlineX(z) {
+        // z = -26 (北) 時海岸在 x = -6.2；z = +26 (南) 時海岸在 x = -11.5
+        const base = -8.6 - z * 0.11;
+        const wiggle = (noise.fbm(z * 0.09 + 2, 1.2, 3) - 0.5) * 2.4;
+        return base + wiggle;
+      }
+
+      // 查詢以色列地理高度與區域屬性
+      function sampleIsraelTerrain(x, z) {
+        const coastX = getCoastlineX(z);
+        const detail = (noise.fbm(x * 0.11 + 8, z * 0.11 + 8, 3) - 0.5) * 1.1;
+
+        // 1. 西邊地中海區域
+        if (x < coastX) {
+          const distOffshore = coastX - x;
+          const depthY = -Math.min(1.6, distOffshore * 0.16);
+          return { height: depthY, region: 'sea', distOffshore };
+        }
+
+        // 2. 沙岸與沿海平原
+        const distInland = x - coastX;
+        if (distInland < 1.25) {
+          return { height: 0.25, region: 'sand', distInland };
+        }
+
+        // 3. 北端黑門山（東北高聳雪山，約 x: 6.5, z: -20.5）
+        const distHermon = Math.hypot((x - 6.8) * 0.85, (z + 20.5) * 0.9);
+        if (distHermon < 6.4) {
+          const rawH = (1 - distHermon / 6.4) * 5.2 + 1.4 + detail * 0.7;
+          const h = terraceHeight(rawH, 0.65, 0.75);
+          return { height: h, region: h > 4.2 ? 'snow' : 'mountain' };
+        }
+
+        // 4. 加利利海（北邊淡水湖，約 x: 5.2, z: -11.8）
+        const distGalilee = Math.hypot((x - 5.2) * 1.15, (z + 11.8) * 0.78);
+        if (distGalilee < 2.45) {
+          return { height: 0.18, region: 'galilee' };
+        }
+
+        // 5. 死海（南邊深凹低窪鹽湖，約 x: 5.5, z: 9.5）
+        const distDeadSea = Math.hypot((x - 5.5) * 1.35, (z - 9.5) * 0.52);
+        if (distDeadSea < 2.85) {
+          return { height: -0.55, region: 'deadsea' };
+        }
+
+        // 6. 約旦河谷（連接加利利海與死海）
+        const riverX = getJordanRiverX(z);
+        const distJordan = Math.abs(x - riverX);
+        if (z > -10.2 && z < 6.8 && distJordan < 1.35) {
+          const h = distJordan < 0.55 ? 0.12 : 0.42;
+          return { height: h, region: distJordan < 0.55 ? 'jordan' : 'valley' };
+        }
+
+        // 7. 東邊外約旦高原（x > riverX + 1.35）
+        if (x > riverX + 1.2) {
+          const eastDist = x - (riverX + 1.2);
+          const rawH = 1.65 + Math.min(2.2, eastDist * 0.22) + detail * 0.9;
+          const h = terraceHeight(rawH, 0.62, 0.76);
+          return { height: h, region: z > 6 ? 'redrock' : 'plateau' };
+        }
+
+        // 8. 中央猶大山地與撒瑪利亞山地（石灰岩台地）
+        const ridgeCenter = (coastX + riverX) * 0.5 + 0.8;
+        const distRidge = Math.abs(x - ridgeCenter);
+        const ridgeFactor = Math.max(0, 1 - distRidge / 6.2);
+
+        // 南方內蓋夫沙漠過渡
+        if (z > 13.5) {
+          const rawH = 0.85 + ridgeFactor * 1.3 + detail * 0.75;
+          const h = terraceHeight(rawH, 0.58, 0.78);
+          return { height: h, region: 'desert' };
+        }
+
+        if (distInland < 3.4) {
+          const rawH = 0.55 + distInland * 0.15 + detail * 0.35;
+          return { height: terraceHeight(rawH, 0.52, 0.8), region: 'coastal_plain' };
+        }
+
+        const rawH = 1.15 + ridgeFactor * 2.15 + detail * 0.85;
+        const h = terraceHeight(rawH, 0.62, 0.76);
+        return { height: h, region: 'judea' };
+      }
+
+      // 建立不規則低多邊形地形網格
+      const stepX = width / segX;
+      const stepZ = depth / segZ;
+      const grid = [];
+
+      for (let iz = 0; iz <= segZ; iz++) {
+        const row = [];
+        for (let ix = 0; ix <= segX; ix++) {
+          const bx = -width / 2 + ix * stepX;
+          const bz = -depth / 2 + iz * stepZ;
+          const jx = (ix === 0 || ix === segX) ? 0 : (noise.noise(ix * 0.65, iz * 0.65) - 0.5) * stepX * 0.52;
+          const jz = (iz === 0 || iz === segZ) ? 0 : (noise.noise(ix * 0.65 + 19, iz * 0.65 + 19) - 0.5) * stepZ * 0.52;
+          const x = bx + jx;
+          const z = bz + jz;
+          const info = sampleIsraelTerrain(x, z);
+          row.push({ x, z, y: info.height, info });
+        }
+        grid.push(row);
+      }
+
+      const positions = [];
+      for (let iz = 0; iz < segZ; iz++) {
+        for (let ix = 0; ix < segX; ix++) {
+          const p00 = grid[iz][ix];
+          const p10 = grid[iz][ix + 1];
+          const p01 = grid[iz + 1][ix];
+          const p11 = grid[iz + 1][ix + 1];
+
+          if ((ix + iz) % 2 === 0) {
+            positions.push(p00.x, p00.y, p00.z, p01.x, p01.y, p01.z, p10.x, p10.y, p10.z);
+            positions.push(p10.x, p10.y, p10.z, p01.x, p01.y, p01.z, p11.x, p11.y, p11.z);
+          } else {
+            positions.push(p00.x, p00.y, p00.z, p01.x, p01.y, p01.z, p11.x, p11.y, p11.z);
+            positions.push(p00.x, p00.y, p00.z, p11.x, p11.y, p11.z, p10.x, p10.y, p10.z);
+          }
+        }
+      }
+
+      const mapGeo = new THREE.BufferGeometry();
+      mapGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+
+      applyLowPolyTerrainColors(mapGeo, (cx, cy, cz, normal, outColor) => {
+        const info = sampleIsraelTerrain(cx, cz);
+        switch (info.region) {
+          case 'sea': {
+            // 深海 #1A8C99 → 近岸 #33BDB9 → 淺灘 #7FE0CF 漸層
+            const d = info.distOffshore;
+            if (d < 1.35) {
+              outColor.copy(C.shoal);
+            } else if (d < 4.2) {
+              outColor.copy(C.nearShore).lerp(C.shoal, 1 - (d - 1.35) / 2.85);
+            } else {
+              outColor.copy(C.deepSea).lerp(C.nearShore, Math.max(0, 1 - (d - 4.2) / 6.5));
+            }
+            break;
+          }
+          case 'sand':
+            outColor.copy(C.sand);
+            break;
+          case 'coastal_plain':
+            outColor.copy(C.grass);
+            break;
+          case 'judea':
+            outColor.copy(cy > 2.2 ? C.limestone : C.dryLand);
+            break;
+          case 'valley':
+            outColor.copy(C.dryLand);
+            break;
+          case 'jordan':
+          case 'galilee':
+            outColor.copy(C.riverLake);
+            break;
+          case 'deadsea':
+            outColor.copy(C.nearShore);
+            break;
+          case 'plateau':
+            outColor.copy(C.plateau);
+            break;
+          case 'redrock':
+            outColor.copy(C.redRock);
+            break;
+          case 'desert':
+            outColor.copy(C.desert);
+            break;
+          case 'mountain':
+            outColor.copy(C.mountain);
+            break;
+          case 'snow':
+            outColor.copy(C.snow);
+            break;
+          default:
+            outColor.copy(C.grass);
+        }
+      });
+
+      const mapMesh = new THREE.Mesh(mapGeo, vertexColorMat);
+      mapMesh.receiveShadow = true;
+      mapMesh.castShadow = true;
+      worldGroup.add(mapMesh);
+
+      // 地中海半透明動態表層水波 + 岸邊白色浪花線
+      const seaSurfaceGeo = new THREE.PlaneGeometry(18, depth, 14, 48);
+      seaSurfaceGeo.rotateX(-Math.PI / 2);
+      const seaSurfaceMat = getFlatMat(PALETTE.nearShore, { transparent: true, opacity: 0.34 });
+      const seaSurface = new THREE.Mesh(seaSurfaceGeo, seaSurfaceMat);
+      seaSurface.position.set(-15.5, 0.08, 0);
+      worldGroup.add(seaSurface);
+
+      // 岸邊白色浪花帶
+      const foamPts = [];
+      for (let i = 0; i < 42; i++) {
+        const z0 = THREE.MathUtils.lerp(-depth * 0.48, depth * 0.48, i / 42);
+        const z1 = THREE.MathUtils.lerp(-depth * 0.48, depth * 0.48, (i + 1) / 42);
+        const x0 = getCoastlineX(z0) - 0.25;
+        const x1 = getCoastlineX(z1) - 0.25;
+        foamPts.push(
+          x0 - 0.28, 0.14, z0,  x0 + 0.18, 0.14, z0,  x1 - 0.28, 0.14, z1,
+          x0 + 0.18, 0.14, z0,  x1 + 0.18, 0.14, z1,  x1 - 0.28, 0.14, z1
+        );
+      }
+      const foamGeo = new THREE.BufferGeometry();
+      foamGeo.setAttribute('position', new THREE.Float32BufferAttribute(foamPts, 3));
+      foamGeo.computeVertexNormals();
+      const foamMesh = new THREE.Mesh(foamGeo, getFlatMat(PALETTE.foam, { transparent: true, opacity: 0.72 }));
+      worldGroup.add(foamMesh);
+
+      animators.push((time) => {
+        seaSurface.position.y = 0.07 + Math.sin(time * 1.4) * 0.03;
+        foamMesh.position.x = Math.sin(time * 1.6) * 0.14;
+      });
+
+      // 耶路撒冷（高處的一小群白石房子，約 x: -0.6, z: 4.5）
+      const jeruX = -0.6;
+      const jeruZ = 4.5;
+      const jeruY = sampleIsraelTerrain(jeruX, jeruZ).height;
+      const jeruGroup = new THREE.Group();
+      jeruGroup.position.set(jeruX, jeruY, jeruZ);
+
+      const houseSpecs = [
+        [0, 0, 0.65, 0.55, 0.65, PALETTE.whiteStone],
+        [-0.55, 0.35, 0.48, 0.42, 0.48, PALETTE.whiteStone],
+        [0.52, 0.28, 0.45, 0.45, 0.45, PALETTE.limestone],
+        [-0.25, -0.48, 0.46, 0.38, 0.46, PALETTE.whiteStone],
+        [0.42, -0.42, 0.42, 0.36, 0.42, PALETTE.whiteStone]
+      ];
+      houseSpecs.forEach(([hx, hz, w, h, d, col]) => {
+        const house = new THREE.Mesh(
+          new THREE.BoxGeometry(w, h, d),
+          getFlatMat(col)
+        );
+        house.position.set(hx, h / 2, hz);
+        house.castShadow = true;
+        house.receiveShadow = true;
+        jeruGroup.add(house);
+      });
+      worldGroup.add(jeruGroup);
+
+      // 沿海平原與加利利周邊點綴低多邊形樹林
+      const treeSpots = [];
+      for (let i = 0; i < 65; i++) {
+        const x = rng.range(-9.5, 4.2);
+        const z = rng.range(-18, 9);
+        const info = sampleIsraelTerrain(x, z);
+        if (info.region === 'coastal_plain' || (info.region === 'judea' && info.height < 1.9)) {
+          if (Math.hypot(x - jeruX, z - jeruZ) > 1.6) {
+            treeSpots.push({ x, y: info.height, z, scale: rng.range(0.65, 1.0) });
+          }
+        }
+      }
+      createInstancedTrees(worldGroup, treeSpots, rng, false);
+      createFlockOfBirds(worldGroup, 7, 24, 9.0);
+      createCloudShadows(worldGroup, 44);
+
+      // 微動畫一：地中海白帆小船沿海岸緩慢航行
+      const boatGroup = new THREE.Group();
+      const hull = new THREE.Mesh(
+        new THREE.BoxGeometry(0.42, 0.22, 1.05),
+        getFlatMat(PALETTE.wood)
+      );
+      hull.position.y = 0.12;
+      const sail = new THREE.Mesh(
+        new THREE.ConeGeometry(0.45, 0.95, 3),
+        getFlatMat(PALETTE.tentCloth)
+      );
+      sail.position.set(0, 0.65, 0);
+      boatGroup.add(hull, sail);
+      worldGroup.add(boatGroup);
+
+      animators.push((time) => {
+        const z = ((time * 0.55 + 10) % 36) - 18;
+        const x = getCoastlineX(z) - 2.6;
+        boatGroup.position.set(x, 0.1 + Math.sin(time * 2.2) * 0.03, z);
+        boatGroup.rotation.z = Math.sin(time * 1.8) * 0.06;
+      });
+
+      // 微動畫二：地中海鯨魚偶爾浮出水面噴水再潛下去
+      const whaleGroup = new THREE.Group();
+      const whaleBody = new THREE.Mesh(
+        new THREE.IcosahedronGeometry(0.75, 1),
+        getFlatMat(PALETTE.cliffBase)
+      );
+      whaleBody.scale.set(0.75, 0.62, 1.85);
+      whaleGroup.add(whaleBody);
+
+      const spoutGeo = new THREE.ConeGeometry(0.24, 0.85, 5);
+      spoutGeo.rotateX(Math.PI);
+      const spoutMesh = new THREE.Mesh(spoutGeo, getFlatMat(PALETTE.foam));
+      spoutMesh.position.set(0, 0.72, -0.45);
+      whaleGroup.add(spoutMesh);
+      worldGroup.add(whaleGroup);
+
+      animators.push((time) => {
+        // 每 14 秒循環一次浮出水面
+        const cycle = (time * 0.075) % 1.0;
+        if (cycle < 0.32) {
+          const t = cycle / 0.32;
+          whaleGroup.visible = true;
+          const surfaceY = -0.35 + Math.sin(t * Math.PI) * 0.52;
+          whaleGroup.position.set(-15.2, surfaceY, 4.5 - t * 1.6);
+          whaleGroup.rotation.x = Math.cos(t * Math.PI) * 0.25;
+
+          // 在最高點附近噴出白色水柱
+          const spoutActive = t > 0.3 && t < 0.7;
+          spoutMesh.visible = spoutActive;
+          if (spoutActive) {
+            const st = (t - 0.3) / 0.4;
+            spoutMesh.scale.setScalar(Math.sin(st * Math.PI) * 1.1);
+          }
+        } else {
+          whaleGroup.visible = false;
+        }
+      });
+
+      // 設定 6 個地名浮動標籤的 3D 錨點
+      mapLabelAnchors = [
+        { name: '耶路撒冷', pos: new THREE.Vector3(jeruX, jeruY + 1.1, jeruZ), isWater: false },
+        { name: '加利利海', pos: new THREE.Vector3(5.2, 0.6, -11.8), isWater: true },
+        { name: '死海',     pos: new THREE.Vector3(5.5, 0.1, 9.5), isWater: true },
+        { name: '約旦河',   pos: new THREE.Vector3(getJordanRiverX(-2.0), 0.7, -2.0), isWater: true },
+        { name: '黑門山',   pos: new THREE.Vector3(6.8, 5.2, -20.5), isWater: false },
+        { name: '地中海',   pos: new THREE.Vector3(-15.5, 0.5, -3.5), isWater: true }
+      ];
+    }
+
+    /**
+     * ============================================================================
+     * 8. 場景重建與浮動地名標籤同步
+     * ============================================================================
+     */
+    const labelsLayer = document.getElementById('labels-layer');
+    let labelElements = [];
+
+    function rebuildCurrentScene() {
+      // 釋放舊場景資源
+      while (worldGroup.children.length > 0) {
+        const obj = worldGroup.children[0];
+        worldGroup.remove(obj);
+      }
+      animators = [];
+      mapLabelAnchors = [];
+      labelsLayer.innerHTML = '';
+      labelElements = [];
+
+      if (state.sceneMode === 'personal') {
+        buildPersonalScene(state.stage, state.seed);
+        controls.target.set(0, 0.8, 0);
+      } else {
+        buildWorldMapScene();
+        controls.target.set(-1.5, 1.0, -2.0);
+
+        // 建立 HTML 地名標籤元素
+        mapLabelAnchors.forEach((item) => {
+          const el = document.createElement('div');
+          el.className = 'map-label' + (item.isWater ? ' water-label' : '');
+          el.textContent = item.name;
+          labelsLayer.appendChild(el);
+          labelElements.push({ el, anchor: item.pos });
+        });
+      }
+
+      updateCameraPosition(true);
+    }
+
+    function updateMapLabels() {
+      if (state.sceneMode !== 'world' || labelElements.length === 0) return;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const proj = new THREE.Vector3();
+
+      for (const item of labelElements) {
+        proj.copy(item.anchor).project(camera);
+        if (proj.z > 1) {
+          item.el.style.opacity = '0';
+          continue;
+        }
+        const x = (proj.x * 0.5 + 0.5) * w;
+        const y = (-proj.y * 0.5 + 0.5) * h;
+        item.el.style.left = `${x}px`;
+        item.el.style.top = `${y}px`;
+        item.el.style.opacity = (x < -40 || x > w + 40 || y < 50 || y > h + 20) ? '0' : '1';
+      }
+    }
+
+    /**
+     * ============================================================================
+     * 9. 鏡頭俯視 45° 與視角（0° / 15° / 45°）平順控制
+     * ============================================================================
+     */
+    function updateCameraPosition(instant = false) {
+      if (instant) {
+        state.currentAzimuthRad = state.targetAzimuthRad;
+      } else {
+        state.currentAzimuthRad = THREE.MathUtils.lerp(
+          state.currentAzimuthRad,
+          state.targetAzimuthRad,
+          0.12
+        );
+      }
+
+      // 保持使用者縮放距離，並鎖定極角 45 度（從南方 +Z 往北 -Z 俯視）
+      const currentDist = camera.position.distanceTo(controls.target) || (state.sceneMode === 'personal' ? 30 : 46);
+      const dist = THREE.MathUtils.clamp(
+        instant ? (state.sceneMode === 'personal' ? 30 : 48) : currentDist,
+        controls.minDistance,
+        controls.maxDistance
+      );
+
+      const polarRad = THREE.MathUtils.degToRad(45);
+      const az = state.currentAzimuthRad; // 0° 正南看正北；往右轉 15° / 45°
+
+      const horizDist = dist * Math.sin(polarRad);
+      const height = dist * Math.cos(polarRad);
+
+      camera.position.set(
+        controls.target.x + Math.sin(az) * horizDist,
+        controls.target.y + height,
+        controls.target.z + Math.cos(az) * horizDist
+      );
+      camera.lookAt(controls.target);
+    }
+
+    /**
+     * ============================================================================
+     * 10. UI 事件綁定與分頁可見度效能管理
+     * ============================================================================
+     */
+    const btnScenePersonal = document.getElementById('btn-scene-personal');
+    const btnSceneWorld = document.getElementById('btn-scene-world');
+    const groupStages = document.getElementById('group-stages');
+    const btnReseed = document.getElementById('btn-reseed');
+    const stageBtns = [
+      document.getElementById('btn-stage-1'),
+      document.getElementById('btn-stage-2'),
+      document.getElementById('btn-stage-3')
+    ];
+    const angleBtns = [
+      { deg: 0, el: document.getElementById('btn-angle-0') },
+      { deg: 15, el: document.getElementById('btn-angle-15') },
+      { deg: 45, el: document.getElementById('btn-angle-45') }
+    ];
+    const btnAnim = document.getElementById('btn-anim');
+
+    function syncUIState() {
+      btnScenePersonal.classList.toggle('active', state.sceneMode === 'personal');
+      btnSceneWorld.classList.toggle('active', state.sceneMode === 'world');
+
+      const isPersonal = state.sceneMode === 'personal';
+      groupStages.classList.toggle('hidden', !isPersonal);
+      btnReseed.classList.toggle('hidden', !isPersonal);
+
+      stageBtns.forEach((btn, idx) => {
+        btn.classList.toggle('active', state.stage === idx + 1);
+      });
+
+      angleBtns.forEach(({ deg, el }) => {
+        el.classList.toggle('active', state.azimuthDeg === deg);
+      });
+
+      btnAnim.textContent = state.animEnabled ? '動畫：開' : '動畫：關';
+    }
+
+    btnScenePersonal.addEventListener('click', () => {
+      if (state.sceneMode === 'personal') return;
+      state.sceneMode = 'personal';
+      syncUIState();
+      rebuildCurrentScene();
+    });
+
+    btnSceneWorld.addEventListener('click', () => {
+      if (state.sceneMode === 'world') return;
+      state.sceneMode = 'world';
+      syncUIState();
+      rebuildCurrentScene();
+    });
+
+    stageBtns.forEach((btn, idx) => {
+      btn.addEventListener('click', () => {
+        const nextStage = idx + 1;
+        if (state.stage === nextStage) return;
+        state.stage = nextStage;
+        syncUIState();
+        rebuildCurrentScene();
+      });
+    });
+
+    btnReseed.addEventListener('click', () => {
+      state.seed = Math.floor(Math.random() * 90000) + 1000;
+      rebuildCurrentScene();
+    });
+
+    angleBtns.forEach(({ deg, el }) => {
+      el.addEventListener('click', () => {
+        state.azimuthDeg = deg;
+        state.targetAzimuthRad = THREE.MathUtils.degToRad(deg);
+        syncUIState();
+      });
+    });
+
+    btnAnim.addEventListener('click', () => {
+      state.animEnabled = !state.animEnabled;
+      syncUIState();
+    });
+
+    // 視窗尺寸自適應
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // 分頁不可見時暫停動畫節省電量與效能
+    let rafId = null;
+    let lastTimestamp = performance.now();
+    let elapsedAnimTime = 0;
+
+    document.addEventListener('visibilitychange', () => {
+      state.isTabVisible = !document.hidden;
+      if (state.isTabVisible) {
+        lastTimestamp = performance.now();
+        if (!rafId) animate(lastTimestamp);
+      } else if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
+    });
+
+    /**
+     * ============================================================================
+     * 11. 主渲染迴圈
+     * ============================================================================
+     */
+    function animate(now) {
+      if (!state.isTabVisible) return;
+      rafId = requestAnimationFrame(animate);
+
+      const dt = Math.min((now - lastTimestamp) / 1000, 0.1);
+      lastTimestamp = now;
+
+      if (state.animEnabled) {
+        elapsedAnimTime += dt;
+        for (let i = 0; i < animators.length; i++) {
+          animators[i](elapsedAnimTime);
+        }
+      }
+
+      controls.update();
+      updateCameraPosition(false);
+      updateMapLabels();
+
+      renderer.render(scene, camera);
+    }
+
+    // 初始啟動
+    syncUIState();
+    rebuildCurrentScene();
+    animate(performance.now());
+  </script>
+</body>
+</html>
