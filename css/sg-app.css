@@ -422,3 +422,15 @@ html.dark[data-dk="c"] { --sg-bg: #14272B; --sg-card: #1D3338; --sg-soft: #25404
 .sg-share { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .sg-share a, .sg-share button { min-height: 46px; border-radius: 12px; border: 0; color: #fff; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; text-decoration: none; cursor: pointer; font-family: inherit; }
 .sg-share button[data-sh="copy"], .sg-share button[data-sh="more"] { background: var(--sg-soft); color: var(--sg-text); }
+/* 每週點名（組員名單上方的點名列、名字前的打勾格） */
+.sg-rollbar { background: var(--sg-card); color: var(--sg-text); border: 1px solid var(--sg-line); border-radius: 14px; padding: 12px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 10px; }
+.sg-roll-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.sg-roll-h { font-size: 16px; font-weight: 800; }
+.sg-roll-date { display: flex; align-items: center; gap: 8px; } .sg-roll-date .sg-btn { min-width: 36px; height: 34px; padding: 0 10px; }
+.sg-roll-guest { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; } .sg-roll-guest .sg-in { width: 70px; text-align: center; }
+#rollSave { margin-left: auto; min-height: 40px; }
+.roll-chk { flex: none; width: 34px; height: 34px; border-radius: 10px; border: 2px solid #C7C7CC; background: #fff; color: transparent; font-size: 18px; font-weight: 900; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.roll-chk[aria-pressed="true"] { background: #007E8A; border-color: #007E8A; color: #fff; }
+.roll-td, .roll-th { text-align: center; padding-left: 8px !important; padding-right: 0 !important; }
+.m-card > .roll-chk { flex: 0 0 34px; width: 34px; padding: 0; border: 2px solid #C7C7CC; border-radius: 10px; background: #fff; color: transparent; justify-content: center; }
+.m-card > .roll-chk[aria-pressed="true"] { background: #007E8A; border-color: #007E8A; color: #fff; }

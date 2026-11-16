@@ -1,7 +1,7 @@
-/* 漢威牧區｜牧養管理（小組長以上）：組員名單（連到 members.html）、每週點名、新朋友、小組基金、安德烈探訪、會議記錄、活動行事曆、牧養手冊、年度大總表 */
+/* 漢威牧區｜牧養管理（小組長以上）：組員名單（連到 members.html，每週點名在那裡）、新朋友、小組基金、安德烈探訪、會議記錄、活動行事曆、牧養手冊、年度大總表 */
 (async function () {
   const U = window.SGU, esc = U.esc, $ = U.$, me = U.session;
-  const SECS = [['roll', '✅ 每週點名'], ['intake', '🌱 新朋友'], ['fund', '💰 小組基金'], ['visit', '🚶 安德烈探訪'], ['annual', '📊 年度大總表'],
+  const SECS = [['intake', '🌱 新朋友'], ['fund', '💰 小組基金'], ['visit', '🚶 安德烈探訪'], ['annual', '📊 年度大總表'],
     ['meet', '🗒️ 會議記錄'], ['event', '📅 活動行事曆'], ['book', '📖 牧養手冊']];
   let D = {};
   async function load() {
@@ -15,8 +15,9 @@
   await load();
   const active = () => D.groups.filter(g => g.active !== false);
   const myGroups = () => U.isDistrict() ? active() : active().filter(g => g.id === D.me.groupId);
-  let cur = { sec: 'roll', gid: (myGroups()[0] || {}).id, date: '' };
+  let cur = { sec: 'intake', gid: (myGroups()[0] || {}).id, date: '' };
   const h = location.hash.slice(1).split(':');
+  if (h[0] === 'roll') { location.replace('members.html#' + location.hash.slice(1)); return; }   // 每週點名已併進組員名單
   if (SECS.some(s => s[0] === h[0])) { cur.sec = h[0]; if (h[1]) cur.gid = h[1]; if (h[2]) cur.date = h[2]; }
 
   function nav() { $('secNav').innerHTML = '<a href="members.html" class="sg-secnav-link">👥 組員名單</a>' + SECS.map(([k, l]) => `<button type="button" data-sec="${k}" aria-pressed="${k === cur.sec}">${l}</button>`).join(''); }
@@ -28,55 +29,9 @@
 
   async function render() {
     if (cur.sec !== 'annual' && (cur.gid === 'district' || !D.gmap[cur.gid] || D.gmap[cur.gid].active === false) ) cur.gid = (myGroups()[0] || {}).id;
-    const fn = { roll, intake, fund, visit, annual, meet, event, book }[cur.sec];
+    const fn = { intake, fund, visit, annual, meet, event, book }[cur.sec];
     $('sec').innerHTML = '<div class="sg-empty">讀取中…</div>';
     await fn();
-  }
-
-  // ================= 每週點名 =================
-  async function roll() {
-    const g = D.gmap[cur.gid];
-    if (!g) { $('sec').innerHTML = '<div class="sg-card sg-empty">沒有可以點名的小組</div>'; return; }
-    const today = U.today();
-    if (!cur.date) { const t = U.meetDate(g, 0); cur.date = t <= today ? t : U.meetDate(g, -1); }
-    const recs = (await U.all('attendance')).filter(a => a.groupId === g.id).sort((a, b) => b.date.localeCompare(a.date));
-    const rec = recs.find(a => a.date === cur.date);
-    const people = D.persons.filter(p => p.groupId === g.id && p.status !== '已離開').sort((a, b) => (a.role === 'leader' ? -1 : 0) - (b.role === 'leader' ? -1 : 0) || a.name.localeCompare(b.name, 'zh-Hant'));
-    const present = new Set(rec ? rec.present : people.map(p => p.id));   // 預設全部有來
-    const half = cur.date.slice(0, 4) + (+cur.date.slice(5, 7) <= 6 ? '-H1' : '-H2');
-    const inHalf = recs.filter(r => !r.special && r.date.slice(0, 4) === cur.date.slice(0, 4) && ((+r.date.slice(5, 7) <= 6) === (half.endsWith('H1'))));
-    const avg = inHalf.length ? (inHalf.reduce((s, r) => s + r.present.length + (r.guests || 0), 0) / inHalf.length).toFixed(1) : '—';
-    const SPECIAL = ['', '聯合主日', '特會', '安息月', '其他'];
-    $('sec').innerHTML = title('每週點名', `${esc(g.name)}・${U.groupMeetText(g)}・預設全部有來，把沒來的點掉`) + groupBar() + `
-      <section class="sg-card"><div class="sg-card-b" style="display:flex;align-items:center;gap:8px;padding-top:12px">
-        <button type="button" class="sg-btn" data-week="-1" aria-label="上一週">‹</button>
-        <div style="flex:1;text-align:center"><div style="font-size:17px;font-weight:800">${U.mdw(cur.date)} ${esc(g.meetTime || '')}</div>
-          <div class="sg-note">${rec ? `已點名・${(rec.present || []).length + (rec.guests || 0)} 人` : '還沒點名'}・${half.replace('-H1', ' 上半年').replace('-H2', ' 下半年')}週平均 ${avg}</div></div>
-        <button type="button" class="sg-btn" data-week="1" aria-label="下一週"${cur.date >= U.meetDate(g, 0) ? ' disabled' : ''}>›</button></div>
-        <div class="sg-card-b" style="padding-top:0"><label class="sg-lab">這週是</label><div class="sg-seg" id="rollSpecial">${SPECIAL.map(s => `<button type="button" data-sp="${s}" aria-pressed="${(rec ? rec.special || '' : '') === s}">${s || '一般小組'}</button>`).join('')}</div></div>
-        <div id="rollList">${people.map(p => `<div class="sg-check-row" role="checkbox" tabindex="0" data-pid="${p.id}" aria-checked="${present.has(p.id)}"><span class="box">✓</span>${U.avatar(p, 34)}<span style="flex:1;font-size:15px;font-weight:700">${esc(p.name)}</span>${p.status !== '委身小組' ? `<span class="sg-badge">${esc(p.status)}</span>` : ''}</div>`).join('')}</div>
-        <div class="sg-card-b" style="display:flex;align-items:center;gap:10px;border-top:1px solid var(--sg-line);padding-top:12px">
-          <label for="rollGuests" style="flex:1;font-size:15px;font-weight:700">新朋友／訪客人數</label>
-          <input class="sg-in" id="rollGuests" type="number" min="0" max="50" value="${rec ? rec.guests || 0 : 0}" style="width:90px;text-align:center"></div>
-        <div class="sg-card-b"><button type="button" class="sg-btn sg-btn-teal" id="rollSave" style="width:100%;min-height:48px">儲存點名（<span id="rollCount">${present.size}</span> 位組員）</button></div>
-      </section>
-      <section class="sg-card" style="margin-top:12px"><div class="sg-card-h">最近幾週</div><div class="sg-scroll-x"><table class="sg-table"><thead><tr><th>日期</th><th class="num">組員</th><th class="num">訪客</th><th class="num">合計</th><th>備註</th></tr></thead><tbody>
-        ${recs.slice(0, 10).map(r => `<tr><td>${U.mdw(r.date)}</td><td class="num">${r.present.length}</td><td class="num">${r.guests || 0}</td><td class="num"><b>${r.present.length + (r.guests || 0)}</b></td><td>${esc(r.special || '')}</td></tr>`).join('') || '<tr><td colspan="5" class="sg-empty">還沒有紀錄</td></tr>'}
-      </tbody></table></div></section>`;
-    let special = rec ? rec.special || '' : '';
-    $('rollSpecial').addEventListener('click', e => { const b = e.target.closest('[data-sp]'); if (!b) return; special = b.dataset.sp; $('rollSpecial').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); });
-    $('rollList').addEventListener('click', e => {
-      const r = e.target.closest('[data-pid]'); if (!r) return;
-      r.setAttribute('aria-checked', String(r.getAttribute('aria-checked') !== 'true'));
-      $('rollCount').textContent = $('rollList').querySelectorAll('[aria-checked="true"]').length;
-    });
-    $('rollList').addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); e.target.click(); } });
-    $('sec').querySelectorAll('[data-week]').forEach(b => b.addEventListener('click', () => { const d = new Date(cur.date); d.setDate(d.getDate() + 7 * b.dataset.week); cur.date = U.iso(d); roll(); }));
-    $('rollSave').addEventListener('click', async () => {
-      const ids = [...$('rollList').querySelectorAll('[aria-checked="true"]')].map(r => r.dataset.pid);
-      await db.collection('attendance').doc(g.id + '_' + cur.date).set({ groupId: g.id, date: cur.date, present: ids, guests: +$('rollGuests').value || 0, special, by: me.personId, at: firebase.firestore.FieldValue.serverTimestamp() });
-      U.toast(`已儲存 ${U.mdw(cur.date)} 點名`); roll();
-    });
   }
 
   // ================= 新朋友 =================

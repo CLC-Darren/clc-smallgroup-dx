@@ -60,7 +60,7 @@
         roll = scopeGroups().map(g => {
           const thisW = U.meetDate(g, 0), lastW = U.meetDate(g, -1), target = thisW <= U.today() ? thisW : lastW;
           const rec = att.find(a => a.groupId === g.id && a.date === target);
-          return `<a class="sg-item" href="care.html#roll:${g.id}:${target}"><span class="sg-ic">✅</span><span class="sg-txt">${esc(g.name)}・${U.mdw(target)}<small>本週點名</small></span>${rec ? `<span class="sg-pill">✓ ${(rec.present || []).length + (rec.guests || 0)} 人</span>` : '<span class="sg-pill" style="background:rgba(245,159,0,.16);color:#B35C00">尚未點名</span>'}</a>`;
+          return `<a class="sg-item" href="members.html#roll:${g.id}:${target}"><span class="sg-ic">✅</span><span class="sg-txt">${esc(g.name)}・${U.mdw(target)}<small>本週點名</small></span>${rec ? `<span class="sg-pill">✓ ${(rec.present || []).length + (rec.guests || 0)} 人</span>` : '<span class="sg-pill" style="background:rgba(245,159,0,.16);color:#B35C00">尚未點名</span>'}</a>`;
         }).join('');
         const scope = new Set(scopeGroups().map(g => g.id));
         const care = D.persons.filter(p => scope.has(p.groupId) && (p.status === '很久沒來' || p.status === '新加入')).slice(0, 6);
