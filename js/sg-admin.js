@@ -114,12 +114,12 @@
       <div class="sg-item"><span class="sg-ic">⬆️</span><span class="sg-txt">匯入資料<small>會取代目前全部資料</small></span><label class="sg-btn">選擇檔案<input type="file" id="dImp" accept="application/json" class="hidden"></label></div>
       <div class="sg-item"><span class="sg-ic">🧪</span><span class="sg-txt">重設假資料<small>靜態預覽用：清掉這台裝置上的修改</small></span><button type="button" class="sg-btn sg-btn-red" id="dReset">重設</button></div></section>`;
     $('dExp').addEventListener('click', () => {
-      const blob = new Blob([localStorage.getItem('sg_mockdb_v2') || '{}'], { type: 'application/json' });
+      const blob = new Blob([localStorage.getItem('sg_mockdb_v3') || '{}'], { type: 'application/json' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `漢威牧區_資料_${U.today()}.json`; a.click();
     });
     $('dImp').addEventListener('change', async e => {
       const file = e.target.files[0]; if (!file) return;
-      try { const txt = await file.text(); JSON.parse(txt); if (!confirm('匯入會取代目前全部資料，確定嗎？')) return; localStorage.setItem('sg_mockdb_v2', txt); location.reload(); }
+      try { const txt = await file.text(); JSON.parse(txt); if (!confirm('匯入會取代目前全部資料，確定嗎？')) return; localStorage.setItem('sg_mockdb_v3', txt); location.reload(); }
       catch (err) { U.toast('檔案格式不對', 'error'); }
     });
     $('dReset').addEventListener('click', () => { if (confirm('回到初始假資料？這台裝置上的修改會清掉。')) SG_MOCK.reset(); });

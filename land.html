@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>CLC Small Group | 我的領地</title>
+  <script>try{var t=localStorage.getItem('sg_theme');if(t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.classList.add('dark')}catch(e){}</script>
+  <link rel="stylesheet" href="css/sg-roster.css?v=20261116c">
+  <link rel="stylesheet" href="css/sg-app.css?v=20261116c">
+</head>
+<body data-page="land" data-roles="district,leader,member">
+  <main class="sg-main sg-main-world">
+    <div class="sg-appbar" id="sgAppbar"><h1>我的領地</h1></div>
+    <div class="sg-world">
+      <section class="sg-world-map" aria-label="我的領地（示意圖）" style="background:#BFE3C9">
+        <svg id="land" viewBox="150 0 600 760" preserveAspectRatio="xMidYMid slice" role="img" aria-label="迦南地示意圖"></svg>
+        <span class="sg-demo-tag">示意圖・正式版換成繪製的地圖</span>
+      </section>
+      <section class="sg-world-feed" aria-label="我的進度">
+        <div class="sg-grab" aria-hidden="true"></div>
+        <section class="sg-card"><div class="sg-card-b" style="display:flex;align-items:center;gap:12px;padding-top:14px"><span id="meAv"></span><div style="flex:1;min-width:0"><div id="meName" style="font-size:17px;font-weight:800"></div><div id="meSub" class="sg-note"></div></div>
+          <span class="sg-badge" title="Q 版英雄角色下一階段加入">英雄角色：即將推出</span></div></section>
+        <section class="sg-card" id="landTasks"></section>
+        <section class="sg-card" id="landArmor"></section>
+        <section class="sg-card" id="landBible"></section>
+        <section class="sg-card"><div class="sg-card-h">我的收藏</div>
+          <a class="sg-item" href="me.html#cards"><span class="sg-ic">📚</span><span class="sg-txt">經文卡冊</span>›</a>
+          <a class="sg-item" href="me.html#badges"><span class="sg-ic">🏅</span><span class="sg-txt">徽章</span>›</a>
+          <a class="sg-item" href="me.html#gifts"><span class="sg-ic">🎁</span><span class="sg-txt">收到的禮物</span>›</a>
+          <a class="sg-item" href="me.html#profile"><span class="sg-ic">👤</span><span class="sg-txt">我的資料</span>›</a></section>
+      </section>
+    </div>
+  </main>
+  <script src="js/sg-seed-static.js?v=20261116c"></script>
+  <script src="js/sg-mock-data.js?v=20261116c"></script>
+  <script src="js/sg-mockdb.js?v=20261116c"></script>
+  <script src="js/sg-shell.js?v=20261116c"></script>
+  <script src="js/sg-data.js?v=20261116c"></script>
+  <script src="js/sg-mapdemo.js?v=20261116c"></script>
+  <script src="js/sg-feed.js?v=20261116c"></script>
+  <script src="js/sg-books.js?v=20261116c"></script>
+  <script src="js/sg-land.js?v=20261116c"></script>
+</body>
+</html>

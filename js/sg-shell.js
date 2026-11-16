@@ -144,21 +144,23 @@
 
   // ---------- 導覽 ----------
   const ICONS = {
-    home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h5v-6h4v6h5V10"/>',
+    world: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/>',
+    land: '<path d="M3 20 12 5l9 15z"/><path d="M9.5 20 12 15l2.5 5"/>',
     care: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
     fellowship: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 11h.01M12 11h.01M15.5 11h.01"/>',
     members: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c2 .6 3.2 2.3 3.5 5.2"/>',
     me: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.2-6 8-6s7 2 8 6"/>'
   };
+  // 四個主分頁（總規格第四節）；團契、我的資料從世界／我的領地進入
   const TABS = [
-    ['home', 'index.html', '首頁', ['district', 'leader', 'member']],
+    ['world', 'index.html', '世界', ['district', 'leader', 'member']],
+    ['land', 'land.html', '我的領地', ['district', 'leader', 'member']],
     ['care', 'care.html', '牧養', ['district', 'leader']],
-    ['fellowship', 'fellowship.html', '團契', ['district', 'leader', 'member']],
-    ['members', 'members.html', '名冊', ['district', 'leader']],
-    ['me', 'me.html', '我的', ['district', 'leader', 'member']]
+    ['members', 'members.html', '名冊', ['district', 'leader']]
   ].filter(t => t[3].includes(session.role));
   const icon = (k, size) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k]}</svg>`;
-  const link = ([k, href, label], size) => `<a href="${href}"${k === page ? ' aria-current="page"' : ''}>${icon(k, size)}<span>${label}</span></a>`;
+  const curTab = { fellowship: 'world', home: 'world', me: 'land' }[page] || page;
+  const link = ([k, href, label], size) => `<a href="${href}"${k === curTab ? ' aria-current="page"' : ''}>${icon(k, size)}<span>${label}</span></a>`;
   const side = document.createElement('nav');
   side.className = 'sg-side'; side.setAttribute('aria-label', '主選單');
   side.innerHTML = TABS.map(t => link(t, 20)).join('');

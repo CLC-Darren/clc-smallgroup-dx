@@ -132,7 +132,11 @@
         if (qt || pray) days[d] = { qt, pray };
         if (qt && pray && chance(0.6)) cards.push({ id: pick(CARD_IDS), at: d });
       }
-      S.daily[id] = { days, cards, received: [], giftsSent: 0 };
+      // 聖經主線：讀完次數（示意）
+      const order = ['gen', 'exo', 'lev', 'num', 'deu', 'jos', 'jdg', 'rut', 'mat', 'mrk', 'luk', 'jhn', 'act', 'psa', 'pro', 'jon'];
+      const books = {}; const nRead = Math.floor(rate * order.length * rnd() * 1.4);
+      order.slice(0, nRead).forEach((b, k) => { books[b] = 1 + (k < 3 && chance(0.4) ? 1 : 0); });
+      S.daily[id] = { days, cards, received: [], giftsSent: 0, books };
     });
 
     // ---------- 點名：過去 16 個星期六 ----------

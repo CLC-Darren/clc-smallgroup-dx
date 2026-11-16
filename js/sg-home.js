@@ -12,10 +12,11 @@
   const v = U.verseOfDay(D.app);
   if (v) $('verse').innerHTML = `${esc(v.text)}<b>${esc(v.ref)}</b>`;
   $('meAvatar').innerHTML = U.avatar(D.me, 40);
+  const mapTag = document.getElementById('mapCity'); if (mapTag) mapTag.textContent = `📍 帕弗・${D.myGroup ? D.myGroup.name : '漢威牧區'}・城市任務 3/4（示意）`;
 
   // ---------- 今日任務（只有自己看得到） ----------
   function renderTasks() {
-    if (D.feat.tasks === false || !D.tasks.length) return;
+    if (!$('taskCard') || D.feat.tasks === false || !D.tasks.length) return;
     const day = (D.myDaily.days || {})[U.today()] || {};
     const st = U.streak(D.myDaily.days || {}, D.tasks, D.app.graceDays ?? 1);
     const done = U.dayDone(day, D.tasks);
@@ -25,7 +26,7 @@
       <div class="sg-streak">🔥 連續 <b style="color:var(--sg-text)">${st}</b> 天${D.feat.cards !== false ? '・全部完成可以抽一張經文卡' : ''}</div>
       <p class="sg-note" style="margin:6px 0 0">🔒 每日任務只有你自己看得到，區長、小組長只看得到全組的總數。</p></div>`;
   }
-  $('taskCard').addEventListener('click', async e => {
+  if ($('taskCard')) $('taskCard').addEventListener('click', async e => {
     const b = e.target.closest('[data-task]'); if (!b) return;
     const on = b.getAttribute('aria-pressed') !== 'true';
     const drawn = await F.setTask(b.dataset.task, on);
@@ -75,9 +76,7 @@
     const evs = D.events.filter(e => e.date >= U.today() && (e.scope !== 'group' || U.isDistrict() || e.groupId === D.me.groupId)).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 4);
     const events = `<section class="sg-card"><div class="sg-card-h">📅 近期活動</div>${evs.length ? evs.map(e => `<div class="sg-item"><span class="sg-ic" style="font-size:13px;font-weight:800;flex-direction:column;line-height:1">${U.md(e.date)}</span><span class="sg-txt">${esc(e.title)}<small>${U.mdw(e.date)}・${esc(e.place || '')}</small></span></div>`).join('') : '<div class="sg-empty">近期沒有活動</div>'}</section>`;
     const html = bday + journey + events;
-    $('sideCol').innerHTML = desk.matches ? html : '';
-    $('sideSlotMobile').innerHTML = desk.matches ? '' : bday + journey;
-    if (!desk.matches) $('sideCol').innerHTML = events;
+    $('sideSlotMobile').innerHTML = html;   // 世界頁：壽星、牧區旅程、活動都放在動態面板上方
   }
   desk.addEventListener('change', renderSide);
   document.addEventListener('click', e => {
