@@ -100,7 +100,7 @@
   document.addEventListener('click', async e => {
     const p = e.target.closest('[data-pop]'); if (p) { openPop(p.dataset.pop); return; }
     const t = e.target.closest('.sg-dialog [data-task]');
-    if (t) { const drawn = await F.setTask(t.dataset.task, t.getAttribute('aria-pressed') !== 'true'); D = await F.load(); status(); taskcol(); openPop(cur); if (drawn) F.showCard(drawn); return; }
+    if (t) { const drawn = await F.setTask(t.dataset.task, t.getAttribute('aria-pressed') !== 'true'); D = await F.load(); status(); taskcol(); dash(); openPop(cur); if (drawn) F.showCard(drawn); return; }
     if (e.target.closest('.sg-dialog #eOk')) {
       const q = s => dlg.querySelector(s), t = q('#eT').value.trim(); if (!t) { U.toast('請填活動名稱', 'error'); return; }
       const scope = q('#eS').value, gid = scope === 'group' ? D.me.groupId : '';
@@ -129,5 +129,19 @@
     setInterval(() => { i = (i + 1) % list.length; el.innerHTML = list[i]; }, 4500);
   }
 
-  status(); taskcol(); ticker();
+  // 不含遊戲（預覽）：地圖的位置改成首頁卡片
+  function dash() {
+    const box0 = document.querySelector('.sg-world-map');
+    if (!noGame || !box0) return;
+    const day = (D.myDaily.days || {})[U.today()] || {}, n = D.tasks.filter(t => day[t.id]).length, lead = U.session.role !== 'member';
+    const tile = (ic, t, sub, attr) => { const a = attr.startsWith('href'); return `<${a ? 'a' : 'button type="button"'} class="sg-dash-tile" ${attr}><span class="ic">${ic}</span><span class="tt">${t}</span><span class="sb">${sub}</span></${a ? 'a' : 'button'}>`; };
+    let box = document.getElementById('homeDash');
+    if (!box) { box = document.createElement('section'); box.id = 'homeDash'; box.className = 'sg-dash'; box0.append(box); }
+    box.innerHTML = tile('☀️', '今日任務', `${n} / ${D.tasks.length}`, 'data-pop="today"') + tile('📅', '活動', `近期 ${events().length} 個`, 'data-pop="events"')
+      + tile('🚩', '小組', '代禱、QT、見證', 'href="fellowship.html"')
+      + (lead ? tile('👥', '組員名單', '點名、新朋友', 'href="members.html"') + tile('🐑', '牧養管理', '基金、年度大總表…', 'href="care.html"') : '')
+      + tile('🙂', '我', '個人資料、收藏', 'href="me.html"');
+  }
+
+  status(); taskcol(); ticker(); dash();
 })();

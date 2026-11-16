@@ -459,20 +459,16 @@ body.sg-drawer-open .sg-tick-arrow { transform: rotate(180deg); }
 .sg-line-btn { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; border-radius: 14px; background: #06C755; color: #fff; font-weight: 800; font-size: 15px; text-decoration: none; margin-bottom: 8px; }
 .sg-av-line { position: relative; display: inline-flex; border-radius: 50%; }
 .sg-av-line::after { content: ''; position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; border-radius: 50%; background: #06C755; box-shadow: 0 0 0 2px var(--sg-card); }
-/* 開發期預覽：管理＋社群（沒有地圖）、只有管理 */
-.sg-nogame .sg-world-map, .sg-nogame .sg-corner-sw, .sg-nogame .sg-demo-tag { display: none !important; }
-.sg-nogame .sg-world { display: block; }
-.sg-nogame .sg-world-feed { position: static; margin: 0 auto; max-width: 680px; min-height: 0; border-radius: 0; box-shadow: none; background: none; transform: none; }
-.sg-nogame .sg-taskcol { position: fixed; z-index: 60; right: 8px; bottom: calc(76px + env(safe-area-inset-bottom)); }
-.sg-nogame .sg-taskcol .sg-rb { color: var(--sg-text); }
-.sg-nogame .sg-main { padding-right: 58px; }
-.sg-nosocial .sg-world-feed, .sg-nosocial .sg-ticker { display: none !important; }
-.sg-nosocial .sg-bottom { justify-content: space-between; }
-.sg-dash { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; max-width: 680px; margin: 12px auto; padding: 0 12px; }
-.sg-dash-tile { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 16px; border-radius: 16px; border: 1px solid var(--sg-line); background: var(--sg-card); color: var(--sg-text); text-decoration: none; text-align: left; cursor: pointer; font-family: inherit; min-height: 104px; }
-.sg-dash-tile .ic { font-size: 26px; } .sg-dash-tile .tt { font-size: 17px; font-weight: 800; } .sg-dash-tile .sb { font-size: 13px; color: var(--sg-muted); }
-@media (min-width: 1024px) and (orientation: landscape) { .sg-nogame .sg-main { padding-right: 90px; } .sg-dash { grid-template-columns: repeat(3, minmax(0, 1fr)); } .sg-nogame .sg-taskcol { right: 22px; bottom: 112px; } }
-.sg-nogame .sg-grab { display: none; }
+/* 開發期預覽「不含遊戲」：版面同遊戲版，地圖換成首頁卡片 */
+.sg-nogame .sg-world-map > svg, .sg-nogame .sg-world-map .sg-demo-tag, .sg-nogame .sg-corner-sw { display: none !important; }
+.sg-nogame .sg-world-map { background: linear-gradient(160deg, #F6EFE2, #E3F1EE); }
+html.dark .sg-nogame .sg-world-map { background: linear-gradient(160deg, var(--sg-bg), var(--sg-card)); }
+.sg-nogame .sg-world-map::after { display: none; }
+.sg-nogame .sg-rb .t, .sg-nogame .sg-rb { color: var(--sg-text) !important; text-shadow: none !important; }
+.sg-dash { position: absolute; z-index: 4; top: 56px; left: 70px; right: 70px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; max-width: 640px; margin: 0 auto; overflow-y: auto; max-height: calc(100% - 70px); }
+.sg-dash-tile { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 14px; border-radius: 16px; border: 1px solid var(--sg-line); background: var(--sg-card); color: var(--sg-text); text-decoration: none; text-align: left; cursor: pointer; font-family: inherit; min-height: 96px; }
+.sg-dash-tile .ic { font-size: 26px; } .sg-dash-tile .tt { font-size: 16px; font-weight: 800; } .sg-dash-tile .sb { font-size: 12px; color: var(--sg-muted); }
+@media (min-width: 1024px) and (orientation: landscape) { .sg-dash { grid-template-columns: repeat(3, minmax(0, 1fr)); top: 72px; } }
 /* 圖示直接壓在地圖上（不要外圈）；左下「我」、右下切換是插圖大按鈕 */
 .sg-rb .o, html.dark body:not(.sg-mapnav) .sg-rb .o { width: 40px; height: 34px; border-radius: 0; background: none !important; box-shadow: none !important; font-size: 28px; line-height: 1; filter: drop-shadow(0 2px 2px rgba(0,0,0,.35)); }
 .sg-rb[aria-current="page"] .o, .sg-rail a[aria-current] .o { box-shadow: none !important; filter: drop-shadow(0 0 6px rgba(255,214,107,.95)) drop-shadow(0 2px 2px rgba(0,0,0,.35)); }

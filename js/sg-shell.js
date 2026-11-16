@@ -191,7 +191,7 @@
   const PREVIEW = (() => { try { return localStorage.getItem('sg_preview') === 'all' || !localStorage.getItem('sg_preview') ? 'all' : 'nogame'; } catch (e) { return 'all'; } })();
   const noGame = PREVIEW !== 'all', noSocial = false;
   if (noGame && page === 'land') { location.replace('index.html'); return; }
-  const mapOn = isMap && !noGame;
+  const mapOn = isMap;   // 不含遊戲也用同一個版面（電腦：動態在右欄）；地圖換成首頁卡片（sg-frame.js）
   document.body.classList.add('sg-frame'); if (mapOn) document.body.classList.add('sg-mapnav');
   if (noGame) document.body.classList.add('sg-nogame'); if (noSocial) document.body.classList.add('sg-nosocial');
   const host = (mapOn && document.querySelector('.sg-world-map')) || document.body;
@@ -202,7 +202,7 @@
   // 控制列（左）
   const railBtn = (ic, href, label, cur) => `<a class="sg-rb" href="${href}"${cur ? ' aria-current="page"' : ''}><span class="o">${ic}</span><span class="t">${label}</span></a>`;   // 圖示暫用 emoji（示意，之後換成畫好的圖示）
   // 順序：小組、收藏、（小組長以上）牧養管理、設定、🧪測試
-  const rail = add('sg-rail', `${noSocial ? '' : railBtn('🚩', 'fellowship.html', '小組', false)}${railBtn('🎒', 'me.html#cards', '收藏', false)}
+  const rail = add('sg-rail', `${noSocial ? '' : railBtn('🚩', 'fellowship.html', '小組', false)}
     ${lead ? railBtn('🐑', 'care.html', '牧養管理', false) : ''}
     <button type="button" class="sg-rb" id="gearBtn" aria-haspopup="true"><span class="o">⚙️</span><span class="t">設定</span></button>`, mapOn ? host : document.body);
   // 任務列（右，地圖頁）

@@ -11,7 +11,7 @@
       + (withUrl.length < gs.length ? `<p class="sg-note" style="margin:0 0 8px">${gs.filter(g => !g.lineUrl).map(g => esc(g.name)).join('、')}還沒有設定 LINE 群組連結${U.isDistrict() ? '，到「設定 → 後台 → 小組」填上邀請連結。' : '，請區長在後台設定。'}</p>` : '')
       + '<p class="sg-note" style="margin:0 0 8px">想找某個人聊聊：點貼文上他的頭像（有綠點的）就會打開 LINE 私訊。</p>';
   }
-  const SECS = [['prayer', '🙏 代禱事項'], ['qt', '📖 QT 分享'], ['testimony', '✨ 見證'], ['journey', '🗺️ 宣教旅程'], ['bday', '🎂 壽星']];
+  const SECS = [['prayer', '🙏 代禱事項'], ['qt', '📖 QT 分享'], ['testimony', '✨ 見證'], ['bday', '🎂 壽星']]   // 宣教旅程先拿掉;
   let sec = SECS.some(s => s[0] === location.hash.slice(1)) ? location.hash.slice(1) : 'prayer';
   let gfilter = 'all';
   const nav = () => { $('secNav').innerHTML = SECS.map(([k, l]) => `<button type="button" data-sec="${k}" aria-pressed="${k === sec}">${l}</button>`).join(''); };
