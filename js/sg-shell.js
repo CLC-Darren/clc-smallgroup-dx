@@ -1,7 +1,6 @@
 /* 漢威牧區｜外框與共用工具
  * - Header：照 DX 標準（深色、Logo、右邊只有 Superuser 的 🔐）。
- * - Header 下面：本站的 App 列（標題／問候、齒輪：深淺色、後台、登出）；右下角暫時的浮動測試鈕（切換身分、色票）。
- * - 導覽：手機底部分頁列、電腦左側選單；依身分顯示不同分頁。
+ * - 外框（學遊戲介面）：狀態列、左控制列（設定、牧養管理、組員名單、收藏、🧪測試）、右任務列、左下「我」、右下 世界地圖⇄我的領地、動態跑馬燈；手機動態用抽屜。
  * - 身分（靜態階段）：存在 localStorage sg_session；接 Firebase 後改成真正的登入。
  * 每頁：<body data-page="home|care|fellowship|members|me|admin" data-roles="district,leader,member">
  */
@@ -144,49 +143,72 @@
   $('suKey').addEventListener('click', () => SGU.toast('🔐 是 Superuser（DX）用的登入，正式版會接 DX；組員不需要用到。'));
   if (page === 'login' || page === 'join') return;   // 登入頁、新朋友登記表：只有 Header
 
-  // ---------- 導覽 ----------
+  // ---------- 外框（學遊戲介面，每頁位置相同） ----------
+  // 狀態列＋活動（左上）／控制列（左）／任務列（右，只在地圖頁）／左下「我」／右下 世界地圖⇄我的領地／動態跑馬燈（底部中間）
+  // 電腦（橫向且寬 ≥ 1024）：動態在右側欄；手機、直向：底部列＋可往上拉的抽屜。資料由 sg-frame.js 填入。
   const ICONS = {
     world: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18"/>',
     land: '<path d="M3 20 12 5l9 15z"/><path d="M9.5 20 12 15l2.5 5"/>',
     care: '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
-    fellowship: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 11h.01M12 11h.01M15.5 11h.01"/>',
     members: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c2 .6 3.2 2.3 3.5 5.2"/>',
-    me: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.2-6 8-6s7 2 8 6"/>'
+    gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>',
+    bag: '<path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>'
   };
-  // 四個主分頁（總規格第四節）；團契、我的資料從世界／我的領地進入
-  const TABS = [
-    ['world', 'index.html', '世界', ['district', 'leader', 'member']],
-    ['land', 'land.html', '我的領地', ['district', 'leader', 'member']],
-    ['care', 'care.html', '牧養', ['district', 'leader']],
-    ['members', 'members.html', '名冊', ['district', 'leader']]
-  ].filter(t => t[3].includes(session.role));
   const icon = (k, size) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k]}</svg>`;
-  const curTab = { fellowship: 'world', home: 'world', me: 'land' }[page] || page;
-  const link = ([k, href, label], size) => `<a href="${href}"${k === curTab ? ' aria-current="page"' : ''}>${icon(k, size)}<span>${label}</span></a>`;
-  const side = document.createElement('nav');
-  side.className = 'sg-side'; side.setAttribute('aria-label', '主選單');
-  side.innerHTML = TABS.map(t => link(t, 20)).join('');
-  const bar = document.createElement('nav');
-  bar.className = 'sg-tabbar'; bar.setAttribute('aria-label', '主選單');
-  bar.innerHTML = TABS.map(t => link(t, 24)).join('');
-  hd.after(side);
-  document.body.append(bar);
-  // 世界／我的領地：導覽放在地圖上（Islanders 式圓形按鈕），不占左側
-  const mapBox = document.querySelector('.sg-world-map');
-  if (mapBox) {
-    document.body.classList.add('sg-mapnav');
-    const hud = document.createElement('nav');
-    hud.className = 'sg-hud'; hud.setAttribute('aria-label', '主選單');
-    hud.innerHTML = TABS.map(([k, href, label]) => `<a href="${href}"${k === curTab ? ' aria-current="page"' : ''}><span class="o">${icon(k, 22)}</span><span>${label}</span></a>`).join('');
-    mapBox.append(hud);
-  }
+  const isMap = page === 'world' || page === 'land';
+  const lead = session.role !== 'member';
+  document.body.classList.add('sg-frame'); if (isMap) document.body.classList.add('sg-mapnav');
+  const host = document.querySelector('.sg-world-map') || document.body;
+  const add = (cls, html, parent) => { const d = document.createElement('div'); d.className = cls; d.innerHTML = html; (parent || host).append(d); return d; };
+  // 狀態列（內容由 sg-frame.js 填）
+  const status = add('sg-status', '<a class="sg-st-me" href="me.html" aria-label="我的個人頁"><span class="sg-st-av"></span></a><span id="sgStatus" class="sg-st-chips"></span>');
+  if (!isMap) { const main = document.querySelector('main'); if (main) main.prepend(status); }
+  // 控制列（左）
+  const railBtn = (k, href, label, cur) => `<a class="sg-rb" href="${href}"${cur ? ' aria-current="page"' : ''}><span class="o">${icon(k, 22)}</span><span class="t">${label}</span></a>`;
+  const rail = add('sg-rail', `<button type="button" class="sg-rb" id="gearBtn" aria-haspopup="true"><span class="o">${icon('gear', 22)}</span><span class="t">設定</span></button>
+    ${lead ? railBtn('care', 'care.html', '牧養管理', page === 'care') + railBtn('members', 'members.html', '組員名單', page === 'members') : ''}
+    ${railBtn('bag', 'me.html#cards', '收藏', false)}`, isMap ? host : document.body);
+  // 任務列（右，地圖頁）
+  if (isMap) add('sg-taskcol', '', host).id = 'sgTasks';
+  // 左下「我」、右下 世界地圖⇄我的領地、跑馬燈
+  const toLand = page === 'world';
+  const meBtn = `<a class="sg-corner sg-corner-me" href="me.html"${page === 'me' ? ' aria-current="page"' : ''}><span class="o" id="sgMeAv">${icon('members', 24)}</span><span class="t">我</span></a>`;
+  const swBtn = `<a class="sg-corner sg-corner-sw" href="${toLand ? 'land.html' : 'index.html'}"><span class="o">${icon(toLand ? 'land' : 'world', 26)}</span><span class="t">${toLand ? '我的領地' : '世界地圖'}</span></a>`;
+  const bar = add('sg-bottom', `${meBtn}<button type="button" class="sg-ticker" id="sgTicker" aria-label="最新動態${isMap ? '（往上拉打開）' : ''}"><span class="sg-grip" aria-hidden="true"></span><span id="sgTickerTxt">　</span></button>${swBtn}`, document.body);
 
-  // ---------- App 列：標題、齒輪 ----------
+  // ---------- 手機：動態抽屜（收合／半開／全開），只有拉底部列或抽屜把手才會動，地圖照常拖曳 ----------
+  const drawer = document.querySelector('.sg-world-feed');
+  const DESK = window.matchMedia('(min-width: 1024px) and (orientation: landscape)');
+  if (drawer) {
+    const STATES = ['closed', 'half', 'full'];
+    let st = 'closed';
+    const set = s => { st = s; drawer.dataset.sheet = s; drawer.style.transform = ''; };
+    set('closed');
+    const handles = [drawer.querySelector('.sg-grab'), $('sgTicker')].filter(Boolean);
+    let drag = null;
+    handles.forEach(h => {
+      h.addEventListener('pointerdown', e => { if (DESK.matches) return; drag = { y: e.clientY, t: Date.now(), moved: false, base: drawer.getBoundingClientRect().top }; try { h.setPointerCapture(e.pointerId); } catch (er) { /* */ } });
+      h.addEventListener('pointermove', e => {
+        if (!drag) return; const dy = e.clientY - drag.y; if (Math.abs(dy) > 6) drag.moved = true;
+        if (drag.moved) { drawer.classList.add('dragging'); drawer.style.transform = `translateY(${Math.max(0, drag.base + dy - drawer.offsetTop)}px)`; }
+      });
+      h.addEventListener('pointerup', e => {
+        if (!drag) return; const dy = e.clientY - drag.y, moved = drag.moved; drag = null; drawer.classList.remove('dragging');
+        if (!moved) { set(st === 'closed' ? 'half' : 'closed'); return; }   // 點一下：開／關
+        const i = STATES.indexOf(st); set(STATES[Math.max(0, Math.min(2, i + (dy < -40 ? 1 : dy > 40 ? -1 : 0) * (Math.abs(dy) > 260 ? 2 : 1)))]);
+      });
+      h.addEventListener('pointercancel', () => { drag = null; drawer.classList.remove('dragging'); set(st); });
+    });
+    host.addEventListener('pointerdown', e => { if (!DESK.matches && st !== 'closed' && !e.target.closest('.sg-bottom, .sg-rail, .sg-taskcol, .sg-status')) set('closed'); });
+  }
+  if (!isMap && $('sgTicker')) $('sgTicker').addEventListener('click', () => { location.href = 'index.html'; });
+  // 世界頁：問候與今日經文放到動態最上面；我的領地：標題拿掉（地圖上已經有）
   const appbar = $('sgAppbar');
-  if (appbar) {
-    appbar.insertAdjacentHTML('beforeend', `<div class="sg-appbar-tools">
-      <button type="button" class="sg-gear" id="gearBtn" aria-label="設定" aria-haspopup="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
-    </div>`);
+  if (appbar && page === 'world' && drawer) drawer.insertBefore(appbar, drawer.querySelector('.sg-grab').nextSibling);
+  if (appbar && page === 'land') appbar.classList.add('hidden');
+
+  // ---------- 設定（齒輪）：深淺色、後台、登出 ----------
+  {
     const pop = document.createElement('div');
     pop.className = 'sg-pop hidden'; pop.id = 'sgPop'; pop.setAttribute('role', 'menu');
     document.body.appendChild(pop);
@@ -194,8 +216,8 @@
       if (!pop.classList.contains('hidden') && pop.dataset.for === btn.id) { pop.classList.add('hidden'); return; }
       pop.innerHTML = html; pop.dataset.for = btn.id; pop.classList.remove('hidden');
       const r = btn.getBoundingClientRect();
-      pop.style.top = (r.bottom + 6 + window.scrollY) + 'px';
-      pop.style.left = Math.max(8, Math.min(r.right - pop.offsetWidth, window.innerWidth - pop.offsetWidth - 8)) + 'px';
+      pop.style.left = Math.min(r.right + 8, window.innerWidth - pop.offsetWidth - 8) + 'px';
+      pop.style.top = (Math.max(8, Math.min(r.top, window.innerHeight - pop.offsetHeight - 8)) + window.scrollY) + 'px';
     };
     $('gearBtn').addEventListener('click', e => {
       const t = getTheme();
@@ -207,17 +229,18 @@
     pop.addEventListener('click', e => {
       const th = e.target.closest('[data-theme]');
       if (th) { try { th.dataset.theme ? localStorage.setItem('sg_theme', th.dataset.theme) : localStorage.removeItem('sg_theme'); } catch (er) { /* */ } applyTheme(); pop.querySelectorAll('[data-theme]').forEach(b => b.setAttribute('aria-pressed', String(b === th))); return; }
-      if (e.target.closest('[data-logout]')) { setSession(null); location.replace('login.html'); return; }
+      if (e.target.closest('[data-logout]')) { setSession(null); location.replace('login.html'); }
     });
     document.addEventListener('click', e => { if (!e.target.closest('#sgPop, #gearBtn')) pop.classList.add('hidden'); });
   }
+
   // ---------- 浮動測試鈕（暫時，正式版拿掉）：身分、頁面、切換身分、回登入頁、材質色票 ----------
   {
     const fab = document.createElement('button');
-    fab.type = 'button'; fab.className = 'sg-testfab'; fab.textContent = '🧪'; fab.setAttribute('aria-label', '測試面板（暫時）');
+    fab.type = 'button'; fab.className = 'sg-rb sg-testfab'; fab.innerHTML = '<span class="o">🧪</span><span class="t">測試</span>'; fab.setAttribute('aria-label', '測試面板（暫時）');
     const panel = document.createElement('div');
     panel.className = 'sg-testpanel hidden'; panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-label', '測試面板');
-    document.body.append(panel, fab);
+    document.body.append(panel); rail.append(fab);
     const draw = () => {
       const me = DEMO.find(d => d.personId === session.personId);
       const file = location.pathname.split('/').pop() || 'index.html';

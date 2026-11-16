@@ -267,40 +267,9 @@ html.dark #sheetBody .sg-ptab button[aria-pressed="true"] { background: #636366;
 .sg-world-map > .sg-demo-tag, .sg-world-map > .sg-map-chip { z-index: 2; }
 .sg-world-map > svg { width: 100%; height: 100%; display: block; }
 .sg-demo-tag { position: absolute; left: 10px; bottom: 34px; font-size: 11px; font-weight: 700; color: #fff; background: rgba(43,36,32,.6); padding: 3px 8px; border-radius: 999px; }
-.sg-map-chip { position: absolute; left: 10px; top: 10px; font-size: 13px; font-weight: 800; color: #FFE3A8; background: rgba(43,36,32,.85); padding: 6px 10px; border-radius: 10px; }
-.sg-map-chip:empty { display: none; }
 .sg-world-feed { position: relative; z-index: 1; margin-top: -24px; background: var(--sg-bg); border-radius: 22px 22px 0 0; padding: 8px 14px 16px; box-shadow: 0 -8px 24px rgba(0,0,0,.18); min-height: 60vh; }
 .sg-world-feed > * + * { margin-top: 12px; }
 .sg-grab { width: 40px; height: 5px; border-radius: 3px; background: var(--sg-line); margin: 0 auto 4px; }
-/* 地圖保持夠大：寬度 ≥ 1180 才左右並排，否則上下排 */
-@media (min-width: 1024px) {
-  body.sg-mapnav .sg-side { display: none; }
-  body.sg-mapnav .sg-main { margin-left: 0; }
-  .sg-world-map { height: 62vh; }
-  .sg-world-feed { max-width: 760px; margin-left: auto; margin-right: auto; }
-}
-@media (min-width: 1180px) {
-  body.sg-mapnav { overflow: hidden; }
-  .sg-world { display: grid; grid-template-columns: minmax(0, 1fr) 420px; }
-  .sg-world-map { height: calc(100vh - var(--sg-hd)); }
-  .sg-world-feed { position: sticky; top: var(--sg-hd); height: calc(100vh - var(--sg-hd)); overflow-y: auto; margin: 0; max-width: none; border-radius: 0; box-shadow: none; border-left: 1px solid var(--sg-line); }
-  .sg-main-world .sg-appbar { position: absolute; z-index: 3; left: 0; right: 420px; background: linear-gradient(rgba(0,0,0,.35), transparent); color: #fff; pointer-events: none; }
-  .sg-main-world .sg-appbar * { pointer-events: auto; }
-  .sg-main-world .sg-appbar .sg-verse, .sg-main-world .sg-appbar .sg-verse b { color: #fff; }
-  .sg-main-world .sg-appbar-tools { right: 16px; }
-  .sg-main-world { padding-bottom: 0; }
-  .sg-map-chip { top: 96px; left: 16px; }
-}
-/* 地圖上的導覽（Islanders 式：底部置中、圓形按鈕） */
-.sg-hud { display: none; }
-@media (min-width: 1024px) {
-  .sg-hud { display: flex; gap: 14px; position: absolute; left: 50%; transform: translateX(-50%); bottom: 40px; z-index: 4; }
-  .sg-hud a { display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; color: #fff; font-size: 12px; font-weight: 800; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
-  .sg-hud .o { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.92); color: #2B2420; box-shadow: 0 4px 14px rgba(0,0,0,.25); transition: transform .15s; }
-  .sg-hud a:hover .o { transform: translateY(-2px); }
-  .sg-hud a[aria-current="page"] .o { background: #007E8A; color: #fff; box-shadow: 0 0 0 3px rgba(255,255,255,.9), 0 4px 14px rgba(0,0,0,.25); }
-  .sg-world-map .sg-demo-tag { bottom: 16px; }
-}
 /* 卷軸：只留一條，細而淡 */
 .sg-world-feed { scrollbar-width: thin; scrollbar-color: rgba(127,127,127,.35) transparent; }
 .sg-world-feed::-webkit-scrollbar { width: 6px; } .sg-world-feed::-webkit-scrollbar-thumb { background: rgba(127,127,127,.35); border-radius: 3px; }
@@ -320,10 +289,57 @@ html.sg-embed .sg-hd { display: none; }
 .sg-book .i { font-size: 22px; }
 .sg-book small { font-size: 11px; color: var(--sg-teal-text); text-align: center; }
 .sg-book.off { opacity: .55; } .sg-book.off small { color: var(--sg-muted); }
-/* P1-0b：浮動測試鈕（暫時，正式版拿掉）。右下角；手機在底部分頁列上方 */
-.sg-testfab { position: fixed; z-index: 95; right: calc(14px + env(safe-area-inset-right)); bottom: calc(62px + env(safe-area-inset-bottom)); width: 48px; height: 48px; border-radius: 50%; border: 0; cursor: pointer;
-  background: #2B2420; color: #fff; font-size: 22px; box-shadow: 0 4px 14px rgba(0,0,0,.3); display: flex; align-items: center; justify-content: center; }
-.sg-testpanel { position: fixed; z-index: 95; right: calc(14px + env(safe-area-inset-right)); bottom: calc(118px + env(safe-area-inset-bottom)); width: min(320px, calc(100vw - 28px)); max-height: 70vh; overflow-y: auto;
+/* ---------- 外框（P1-0b 介面，學遊戲）：狀態列、左控制列、右任務列、左下「我」、右下切換、跑馬燈、手機抽屜 ----------
+ * 預設＝手機／直向；電腦＝橫向且寬 ≥ 1024（最後面） */
+body.sg-frame .sg-main { margin-left: 0; padding-left: 64px; padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+body.sg-frame.sg-mapnav .sg-main { padding: 0; }
+.sg-status { display: flex; align-items: center; gap: 6px; padding: 10px 12px 0 64px; }
+.sg-mapnav .sg-status { position: absolute; z-index: 5; left: 10px; top: 10px; right: 76px; padding: 0; }
+.sg-st-me { flex: none; display: flex; border-radius: 50%; box-shadow: 0 0 0 2px #fff, 0 3px 10px rgba(0,0,0,.25); }
+.sg-st-av:empty { width: 34px; height: 34px; }
+.sg-st-chips { display: flex; align-items: center; gap: 6px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.sg-st-chips::-webkit-scrollbar { display: none; }
+.sg-mapnav .sg-st-name { display: none; }
+.sg-st-name { font-weight: 800; font-size: 15px; margin-right: 2px; }
+.sg-mapnav .sg-st-name { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.55); }
+.sg-chip { flex: none; display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 10px; border-radius: 999px; border: 0; background: rgba(43,36,32,.78); color: #fff; font-size: 13px; font-weight: 800; white-space: nowrap; font-family: inherit; }
+button.sg-chip { cursor: pointer; }
+.sg-chip.hot { background: #E8A33D; }
+.sg-rail, .sg-taskcol { display: flex; flex-direction: column; gap: 10px; }
+.sg-rail { position: fixed; z-index: 60; left: 6px; top: calc(var(--sg-hd) + 58px); }
+.sg-mapnav .sg-rail { position: absolute; z-index: 5; top: 58px; left: 8px; }
+.sg-taskcol { position: absolute; z-index: 5; right: 8px; top: 10px; }
+.sg-rb { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; width: 52px; padding: 0; border: 0; background: none; text-decoration: none; color: var(--sg-text); font-size: 11px; font-weight: 800; cursor: pointer; font-family: inherit; }
+.sg-mapnav .sg-rb { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+.sg-rb .o { position: relative; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.94); color: #2B2420; box-shadow: 0 3px 10px rgba(0,0,0,.22); font-size: 20px; text-shadow: none; }
+.sg-rb[aria-current="page"] .o { background: #007E8A; color: #fff; }
+.sg-rb .t { white-space: nowrap; }
+.sg-rb .b { position: absolute; top: -4px; right: -2px; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box; border-radius: 9px; background: #007E8A; color: #fff; font-size: 10px; line-height: 18px; text-shadow: none; }
+.sg-rb .dot { position: absolute; top: 0; right: 0; width: 10px; height: 10px; border-radius: 50%; background: #E5484D; box-shadow: 0 0 0 2px #fff; }
+html.dark body:not(.sg-mapnav) .sg-rb .o { background: var(--sg-card); color: var(--sg-text); box-shadow: 0 0 0 1px var(--sg-line); }
+.sg-bottom { position: fixed; z-index: 80; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 8px; padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  background: var(--sg-bar); border-top: 1px solid var(--sg-line); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+.sg-corner { flex: none; display: flex; flex-direction: column; align-items: center; gap: 2px; width: 60px; text-decoration: none; color: var(--sg-text); font-size: 11px; font-weight: 800; }
+.sg-corner .o { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; background: #007E8A; color: #fff; box-shadow: 0 3px 10px rgba(0,0,0,.2); overflow: hidden; }
+.sg-corner-me .o { border-radius: 50%; background: var(--sg-card); color: var(--sg-text); }
+.sg-ticker { flex: 1; min-width: 0; height: 50px; border: 0; border-radius: 12px; background: var(--sg-soft); color: var(--sg-text); font-size: 13px; text-align: left; padding: 0 12px;
+  display: flex; flex-direction: column; justify-content: center; gap: 5px; cursor: pointer; font-family: inherit; touch-action: none; }
+.sg-ticker #sgTickerTxt { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sg-grip { align-self: center; width: 36px; height: 4px; border-radius: 2px; background: rgba(127,127,127,.45); }
+body:not(.sg-mapnav) .sg-grip { display: none; }
+/* 地圖頁（手機、直向）：地圖固定滿版；動態是抽屜，拉底部列打開 */
+body.sg-mapnav { overflow: hidden; }
+.sg-mapnav .sg-world-map { position: fixed; top: var(--sg-hd); left: 0; right: 0; bottom: calc(63px + env(safe-area-inset-bottom)); height: auto; }
+.sg-mapnav .sg-world-feed { position: fixed; z-index: 70; left: 0; right: 0; margin: 0; max-width: none; min-height: 0; bottom: calc(63px + env(safe-area-inset-bottom));
+  height: calc(100vh - var(--sg-hd) - 100px); height: calc(100dvh - var(--sg-hd) - 100px - env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; transition: transform .28s cubic-bezier(.2,.8,.2,1); }
+.sg-world-feed[data-sheet="closed"] { transform: translateY(100%); }
+.sg-world-feed[data-sheet="half"] { transform: translateY(45%); }
+.sg-world-feed[data-sheet="full"] { transform: translateY(0); }
+.sg-world-feed.dragging { transition: none; }
+.sg-grab { touch-action: none; cursor: grab; padding: 6px 0; box-sizing: content-box; }
+.sg-world-map .sg-demo-tag { bottom: 8px; left: 50%; transform: translateX(-50%); }
+/* 測試面板（暫時）：在控制列旁邊 */
+.sg-testpanel { position: fixed; z-index: 95; left: 64px; bottom: calc(76px + env(safe-area-inset-bottom)); width: min(320px, calc(100vw - 76px)); max-height: 70vh; overflow-y: auto;
   background: var(--sg-card); color: var(--sg-text); border: 1px solid var(--sg-line); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,.25); padding: 12px; font-size: 13px; scrollbar-width: thin; }
 .sg-testpanel h3 { font-size: 12px; font-weight: 800; color: var(--sg-muted); margin: 10px 0 6px; }
 .sg-testpanel h3:first-child { margin-top: 0; }
@@ -335,4 +351,30 @@ html.sg-embed .sg-hd { display: none; }
 .sg-swatch .n { font-weight: 800; } .sg-swatch .u { grid-column: 1; color: var(--sg-muted); font-size: 11px; }
 .sg-swatch .cs { grid-row: 1 / span 2; grid-column: 2; display: flex; gap: 3px; }
 .sg-swatch .cs span { width: 30px; height: 30px; border-radius: 6px; border: 1px solid rgba(0,0,0,.12); display: flex; align-items: flex-end; justify-content: center; font-size: 8px; color: rgba(0,0,0,.55); cursor: copy; }
-@media (min-width: 1024px) { .sg-testfab { bottom: 20px; right: 20px; } .sg-testpanel { bottom: 78px; right: 20px; } }
+/* 電腦（橫向且寬 ≥ 1024）：沒有底部列；「我」、切換鈕在左下、右下，跑馬燈在中間；動態在右側欄 */
+@media (min-width: 1024px) and (orientation: landscape) {
+  body.sg-frame .sg-main { padding-left: 78px; padding-bottom: 96px; }
+  .sg-status { padding-left: 78px; }
+  .sg-rail { left: 14px; }
+  .sg-mapnav .sg-rail { left: 14px; top: 64px; }
+  .sg-taskcol { right: 14px; top: 14px; }
+  .sg-mapnav .sg-status { left: 14px; top: 14px; }
+  .sg-rb .o { width: 50px; height: 50px; }
+  .sg-bottom { left: 14px; right: 14px; bottom: 14px; padding: 0; background: none; border: 0; backdrop-filter: none; -webkit-backdrop-filter: none; pointer-events: none; justify-content: space-between; align-items: flex-end; }
+  .sg-bottom > * { pointer-events: auto; }
+  .sg-mapnav .sg-bottom { right: 434px; }
+  .sg-grip { display: none; }
+  .sg-mapnav .sg-st-name { display: inline; }
+  .sg-corner { width: 76px; font-size: 12px; }
+  .sg-corner .o { width: 60px; height: 60px; border-radius: 18px; }
+  .sg-corner-me .o { border-radius: 50%; }
+  .sg-mapnav .sg-corner { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+  .sg-ticker { flex: 0 1 520px; height: 40px; border-radius: 999px; background: rgba(43,36,32,.78); color: #fff; margin-bottom: 18px; }
+  .sg-ticker b { color: #FFE3A8; }
+  .sg-mapnav .sg-world { display: grid; grid-template-columns: minmax(0, 1fr) 420px; }
+  .sg-mapnav .sg-world-map { position: relative; top: auto; bottom: auto; height: calc(100vh - var(--sg-hd)); }
+  .sg-mapnav .sg-world-feed { position: relative; transform: none !important; bottom: auto; height: calc(100vh - var(--sg-hd)); border-radius: 0; box-shadow: none; border-left: 1px solid var(--sg-line); }
+  .sg-world-feed .sg-grab { display: none; }
+  .sg-world-map .sg-demo-tag { bottom: 70px; }
+  .sg-testpanel { left: 80px; bottom: 20px; }
+}

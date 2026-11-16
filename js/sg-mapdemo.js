@@ -172,7 +172,7 @@
   // 拖曳、縮放；一開始依畫面比例對準東地中海
   T.panzoom(W, { x: 0, y: 0, w: 900, h: 660 }, ar => { let vh = 500, vw = vh * ar; if (vw > 860) { vw = 860; vh = vw / ar; } if (vh > 620) { vw = 620 * ar; } return { cx: 690, cy: 330, w: vw }; });
   }
-  // ---------- ② 我的領地：迦南地，浮在海上的等角島嶼 ----------
+  // ---------- ② 我的領地：迦南地，浮在海上的島（2.5D 俯視，北朝上） ----------
   const L = document.getElementById('land'); if (L && T) {
   // 一格一個字（西 → 東、北 → 南）：~海 s沙岸 g草地 f樹林 d乾地 D乾地高 l石灰岩 L耶路撒冷 y曠野 n/N南地沙漠 v河谷 j約旦河 B加利利海 S死海 p/P外約旦高原 m山 H黑門山 R以東紅岩 Z西奈山
   const MAP = [
@@ -181,7 +181,7 @@
   const CODE = { '~': [-1, 'grass'], s: [.35, 'grass'], g: [1, 'grass'], f: [2, 'forest'], d: [2, 'dry'], D: [3, 'dry'], l: [4, 'lime'], L: [5, 'lime'], y: [2, 'desert'], n: [1, 'desert'], N: [2, 'desert'],
     v: [.35, 'valley'], j: [.3, 'water'], B: [.3, 'water'], S: [.2, 'water'], p: [3, 'plateau'], P: [4, 'plateau'], m: [4, 'mount'], H: [6, 'mount'], R: [4, 'red'], Z: [5, 'red'] };
   const MATS = ['grass', 'dry', 'desert', 'plateau', 'lime', 'red', 'mount', 'forest', 'valley', 'water'];
-  const PAD = 2, F = 4, CW = 12 + PAD * 2, CH = MAP.length + PAD * 2, NX = CW * F + 1, NY = CH * F + 1, TS = 30;
+  const PAD = 2, F = 4, CW = 12 + PAD * 2, CH = MAP.length + PAD * 2, NX = CW * F + 1, NY = CH * F + 1, SX = 34, SY = 25;
   const cell = (c, r) => { c -= PAD; r -= PAD; return CODE[(MAP[r] || '')[c]] || CODE['~']; };
   const G = T.grid(NX, NY);
   for (let fy = 0; fy < NY; fy++) for (let fx = 0; fx < NX; fx++) {       // 粗格放大（雙線性），材質取最近的格
@@ -190,7 +190,7 @@
     G.h[fy * NX + fx] = (h(i, j) * (1 - u) + h(i + 1, j) * u) * (1 - w) + (h(i, j + 1) * (1 - u) + h(i + 1, j + 1) * u) * w;
     G.m[fy * NX + fx] = MATS.indexOf(cell(Math.min(CW - 1, Math.floor(fx / F)), Math.min(CH - 1, Math.floor(fy / F)))[1]);
   }
-  const iso0 = (gx, gy) => { gx = gx / F - PAD; gy = gy / F - PAD; return [(gx - gy) * TS, (gx + gy) * TS / 2]; };
+  const iso0 = (gx, gy) => [(gx / F - PAD) * SX, (gy / F - PAD) * SY];   // 北朝上：x＝東、y＝南
   el('rect', { x: -3000, y: -3000, width: 6000, height: 6000, fill: '#2E8E9E' }, L);
   const R = T.render(L, { id: 'l', G, mats: MATS, proj: iso0, noise: .35, landBlur: [1, 2], seaBlur: [3, 2], simplify: 1.3, shadow: [.9, .45],
     water: [{ t: .03, c: '#3FA3B0' }, { t: .12, c: '#57BFC4' }, { t: .3, c: '#74CFC6' }, { t: .4, c: '#8EDDD3' }],
@@ -201,7 +201,7 @@
   const G2 = el('g', {}, L);
   // 地名
   [['黑門山', 7.5, -.6], ['加利利海', 8.6, 3.4], ['約旦河', 9.6, 6.6], ['死海', 10.4, 11.6], ['耶路撒冷', 7.6, 10.2], ['外約旦高原', 11.2, 8.4], ['南地', 6, 15.6]].forEach(([t, c, r]) => { const [x, y] = at(c, r); geo(G2, x, y, t, 12); });
-  { const [x, y] = iso0((0 + PAD) * F, (9 + PAD) * F); geo(G2, x - 40, y, '地中海', 14); }
+  { const [x, y] = iso0((0 + PAD) * F, (9 + PAD) * F); geo(G2, x - 20, y, '地中海', 14); }
   // 山峰、樹林
   { const [x, y] = at(7.5, .6); T.peak(G2, x, y, 20, 'snow'); }
   [[4.5, .8], [5.2, 1.1], [4.7, 1.6], [5.8, 1.6], [6.3, 1.0], [3.4, 4.4, 1], [3.9, 4.8, 1], [4.6, 2.9, 1], [5.6, 3.3, 1]].forEach(([c, r, rd]) => { const [x, y] = at(c, r); T.tree(G2, x, y, 9, rd); });
@@ -226,6 +226,6 @@
   { const [x, y] = at(6.5, 11.2); const P = iso(x, y, 10);
     block(G2, P, -.6, -.6, 1.2, 1.2, 12, PAL.stone); roof(G2, P, -.6, -.6, 1.2, 1.2, 12, 7, PAL.roof);
     person(G2, x - 16, y + 8, '#6741D9', '#E9E4F5'); label(G2, x - 6, y + 20, '以賽亞 🔒', '讀以賽亞書解鎖'); }
-  T.panzoom(L, { x: -620, y: -110, w: 980, h: 620 }, ar => ({ cx: -110, cy: 200, w: ar < 1 ? 720 : Math.max(900, 560 * ar) }), true);
+  T.panzoom(L, { x: -110, y: -110, w: 630, h: 680 }, ar => ({ cx: 205, cy: 235, w: ar < 1 ? 460 : Math.max(630, 680 * ar) }), true);
   }
 })();
