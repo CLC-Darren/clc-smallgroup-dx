@@ -4,6 +4,7 @@
   const U = window.SGU, F = window.SGF; if (!U || !F || !U.session || !document.getElementById('sgStatus')) return;   // 面板裡不用
   const esc = U.esc, $ = U.$;
   let D = await F.load();
+  const noGame = document.body.classList.contains('sg-nogame'), noSocial = document.body.classList.contains('sg-nosocial');
   const first = n => (n || '').length >= 3 ? n.slice(1) : n;
   const scopeGroups = () => U.isDistrict() ? D.groups.filter(g => g.active !== false) : [D.myGroup].filter(Boolean);
 
@@ -17,7 +18,7 @@
     document.querySelectorAll('.sg-st-av').forEach(e => { e.innerHTML = U.avatar(D.me, 34); });
     const meAv = $('sgMeAv'); if (meAv) meAv.innerHTML = U.avatar(D.me, 44);
     $('sgStatus').innerHTML = `<span class="sg-st-name">${esc(first(D.me.name))}</span>
-      <span class="sg-chip" title="連續天數">🔥 ${st}</span><span class="sg-chip" title="聖經 66 卷讀完幾卷">📖 ${read}/66</span><span class="sg-chip" title="小組營地柴火（本月全組 QT 次數）">🪵 ${fire}</span>
+      <span class="sg-chip" title="連續天數">🔥 ${st}</span><span class="sg-chip" title="聖經 66 卷讀完幾卷">📖 ${read}/66</span>${noGame ? '' : `<span class="sg-chip" title="小組營地柴火（本月全組 QT 次數）">🪵 ${fire}</span>`}
       <button type="button" class="sg-chip sg-ev${todayStar ? ' hot' : ''}" data-pop="bday" title="${month} 月壽星">🎂 ${stars.length}</button>`;
   }
   function bdays() {
@@ -33,7 +34,7 @@
     const day = (D.myDaily.days || {})[U.today()] || {}, n = D.tasks.filter(t => day[t.id]).length, done = U.dayDone(day, D.tasks);
     const btn = (k, ic, label, badge, dot) => `<button type="button" class="sg-rb" data-pop="${k}"><span class="o">${ic}${dot ? '<i class="dot"></i>' : ''}</span><span class="t">${label}</span>${badge ? `<span class="b">${badge}</span>` : ''}</button>`;
     box.innerHTML = btn('today', '☀️', '今日任務', D.tasks.length ? (done ? '✓' : `${n}/${D.tasks.length}`) : '', !done && D.tasks.length)
-      + btn('group', '🏕️', '小組任務', '', false) + btn('district', '🏛️', '牧區任務', '', false) + btn('events', '📅', '活動', events().length || '', false);
+      + (noGame ? '' : btn('group', '🏕️', '小組任務', '', false) + btn('district', '🏛️', '牧區任務', '', false)) + btn('events', '📅', '活動', events().length || '', false);
   }
 
   // ---------- 彈出視窗 ----------
@@ -130,5 +131,19 @@
     setInterval(() => { i = (i + 1) % list.length; el.innerHTML = list[i]; }, 4500);
   }
 
-  status(); taskcol(); ticker();
+  // 只有管理（預覽）：首頁沒有地圖也沒有動態，改成幾個大按鈕
+  function dash() {
+    if (!noSocial || !document.querySelector('.sg-world')) return;
+    const day = (D.myDaily.days || {})[U.today()] || {}, n = D.tasks.filter(t => day[t.id]).length;
+    const tile = (ic, t, sub, attr) => `<${attr.startsWith('href') ? 'a' : 'button type="button"'} class="sg-dash-tile" ${attr}><span class="ic">${ic}</span><span class="tt">${t}</span><span class="sb">${sub}</span></${attr.startsWith('href') ? 'a' : 'button'}>`;
+    const lead = U.session.role !== 'member', g = D.myGroup;
+    let box = document.getElementById('homeDash');
+    if (!box) { box = document.createElement('section'); box.id = 'homeDash'; box.className = 'sg-dash'; document.querySelector('.sg-world').before(box); }
+    box.innerHTML = tile('☀️', '今日任務', `${n} / ${D.tasks.length}`, 'data-pop="today"') + tile('📅', '活動', `近期 ${events().length} 個`, 'data-pop="events"')
+      + (lead ? tile('👥', '組員名單', '點名、新朋友', 'href="members.html"') + tile('❤', '牧養管理', '基金、年度大總表…', 'href="care.html"') : '')
+      + (g && g.lineUrl ? tile('💬', '小組 LINE 群組', esc(g.name), `href="${esc(g.lineUrl)}" target="_blank" rel="noopener"`) : '')
+      + tile('🙂', '我', '個人資料、收藏', 'href="me.html"');
+  }
+
+  status(); taskcol(); ticker(); dash();
 })();

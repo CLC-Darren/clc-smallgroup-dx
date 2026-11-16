@@ -187,28 +187,34 @@
   const icon = (k, size) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k]}</svg>`;
   const isMap = page === 'world' || page === 'land';
   const lead = session.role !== 'member';
-  document.body.classList.add('sg-frame'); if (isMap) document.body.classList.add('sg-mapnav');
-  const host = document.querySelector('.sg-world-map') || document.body;
+  // 開發期預覽（🧪 測試面板切換）：分批開放時的樣子。all＝全部、nogame＝管理＋社群（沒有地圖、遊戲）、admin＝只有管理
+  const PREVIEW = (() => { try { return localStorage.getItem('sg_preview') || 'all'; } catch (e) { return 'all'; } })();
+  const noGame = PREVIEW !== 'all', noSocial = PREVIEW === 'admin';
+  if (noGame && page === 'land') { location.replace('index.html'); return; }
+  const mapOn = isMap && !noGame;
+  document.body.classList.add('sg-frame'); if (mapOn) document.body.classList.add('sg-mapnav');
+  if (noGame) document.body.classList.add('sg-nogame'); if (noSocial) document.body.classList.add('sg-nosocial');
+  const host = (mapOn && document.querySelector('.sg-world-map')) || document.body;
   const add = (cls, html, parent) => { const d = document.createElement('div'); d.className = cls; d.innerHTML = html; (parent || host).append(d); return d; };
   // 狀態列（內容由 sg-frame.js 填）
   const status = add('sg-status', '<a class="sg-st-me" href="me.html" aria-label="我的個人頁"><span class="sg-st-av"></span></a><span id="sgStatus" class="sg-st-chips"></span>');
-  if (!isMap) { const main = document.querySelector('main'); if (main) main.prepend(status); }
+  if (!mapOn) { const main = document.querySelector('main'); if (main) main.prepend(status); }
   // 控制列（左）
   const railBtn = (k, href, label, cur) => `<a class="sg-rb" href="${href}"${cur ? ' aria-current="page"' : ''}><span class="o">${icon(k, 20)}</span><span class="t">${label}</span></a>`;
   // 順序：小組、收藏、（小組長以上）牧養管理、設定、🧪測試
-  const rail = add('sg-rail', `${railBtn('flag', 'fellowship.html', '小組', false)}${railBtn('bag', 'me.html#cards', '收藏', false)}
+  const rail = add('sg-rail', `${noSocial ? '' : railBtn('flag', 'fellowship.html', '小組', false)}${railBtn('bag', 'me.html#cards', '收藏', false)}
     ${lead ? railBtn('care', 'care.html', '牧養管理', false) : ''}
-    <button type="button" class="sg-rb" id="gearBtn" aria-haspopup="true"><span class="o">${icon('gear', 20)}</span><span class="t">設定</span></button>`, isMap ? host : document.body);
+    <button type="button" class="sg-rb" id="gearBtn" aria-haspopup="true"><span class="o">${icon('gear', 20)}</span><span class="t">設定</span></button>`, mapOn ? host : document.body);
   // 任務列（右，地圖頁）
   if (isMap) add('sg-taskcol', '', host).id = 'sgTasks';
   // 左下「我」、右下 世界地圖⇄我的領地、跑馬燈
   const toLand = page === 'world';
   const meBtn = `<a class="sg-corner sg-corner-me" href="me.html"${page === 'me' ? ' aria-current="page"' : ''}><span class="o" id="sgMeAv">${icon('members', 24)}</span><span class="t">我</span></a>`;
   const swBtn = `<a class="sg-corner sg-corner-sw" href="${toLand ? 'land.html' : 'index.html'}"><span class="o">${icon(toLand ? 'land' : 'world', 26)}</span><span class="t">${toLand ? '我的領地' : '世界地圖'}</span></a>`;
-  const bar = add('sg-bottom', `${meBtn}<button type="button" class="sg-ticker" id="sgTicker" aria-label="最新動態${isMap ? '（按一下展開）' : ''}"><span id="sgTickerTxt">　</span>${isMap ? '<svg class="sg-tick-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>' : ''}</button>${swBtn}`, document.body);
+  const bar = add('sg-bottom', `${meBtn}<button type="button" class="sg-ticker" id="sgTicker" aria-label="最新動態${mapOn ? '（按一下展開）' : ''}"><span id="sgTickerTxt">　</span>${mapOn ? '<svg class="sg-tick-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>' : ''}</button>${swBtn}`, document.body);
 
   // ---------- 手機：動態抽屜。不用拖拉（避免跟 Android 返回手勢、上下捲動衝突），按箭頭展開到頂端／收合 ----------
-  const drawer = document.querySelector('.sg-world-feed');
+  const drawer = mapOn ? document.querySelector('.sg-world-feed') : null;
   const DESK = window.matchMedia('(min-width: 1024px) and (orientation: landscape)');
   if (drawer) {
     const set = s => { drawer.dataset.sheet = s; document.body.classList.toggle('sg-drawer-open', s === 'full'); };
@@ -218,7 +224,7 @@
     $('sgTicker').addEventListener('click', () => { if (!DESK.matches) set(drawer.dataset.sheet === 'full' ? 'closed' : 'full'); });
     $('sgDrawerClose').addEventListener('click', () => set('closed'));
   }
-  if (!isMap && $('sgTicker')) $('sgTicker').addEventListener('click', () => { location.href = 'index.html'; });
+  if (!mapOn && $('sgTicker')) $('sgTicker').addEventListener('click', () => { if (page === 'world') scrollTo({ top: 0, behavior: 'smooth' }); else location.href = 'index.html'; });
   // 世界頁：問候與今日經文放到動態最上面；我的領地：標題拿掉（地圖上已經有）
   const appbar = $('sgAppbar');
   if (appbar && page === 'world' && drawer) drawer.insertBefore(appbar, (drawer.querySelector('.sg-grab-btn') || drawer.firstChild).nextSibling);
@@ -314,6 +320,7 @@
         : '<p class="sg-note">色票在「世界」「我的領地」頁才會顯示。</p>';
       panel.innerHTML = `<h3>現在</h3><div class="now">身分：<b>${esc(me ? me.label : ROLE_LABEL[session.role])}</b><br>頁面：<b>${esc(title)}</b>（${esc(file)}）</div>
         <h3>切換身分</h3><div class="roles">${DEMO.map(d => `<button type="button" data-demo="${d.personId}" aria-pressed="${d.personId === session.personId}">${ROLE_LABEL[d.role]}</button>`).join('')}</div>
+        <h3>預覽模式（分批開放時的樣子）</h3><div class="roles">${[['all', '全部'], ['nogame', '管理＋社群'], ['admin', '只有管理']].map(([k, l]) => `<button type="button" data-pv="${k}" aria-pressed="${PREVIEW === k}">${l}</button>`).join('')}</div>
         <h3>深色模式（候選，切到深色才看得出來）</h3><div class="roles">${[['a', '石板藍'], ['b', '暖灰'], ['c', '深海綠'], ['o', '原本']].map(([k, l]) => `<button type="button" data-dk="${k}" aria-pressed="${getDark() === k}">${l}</button>`).join('')}</div>
         <h3>登入</h3><button type="button" class="go" data-login>↪ 回登入頁</button>
         <h3>材質色票（亮面／暗面／陰影；點色塊複製色碼）</h3>${sw}`;
@@ -323,6 +330,8 @@
       const dm = e.target.closest('[data-demo]');
       if (dm) { const d = DEMO.find(x => x.personId === dm.dataset.demo); setSession({ personId: d.personId, role: d.role }); location.reload(); return; }
       if (e.target.closest('[data-login]')) { setSession(null); location.replace('login.html'); return; }
+      const pv = e.target.closest('[data-pv]');
+      if (pv) { try { localStorage.setItem('sg_preview', pv.dataset.pv); } catch (er) { /* */ } location.href = 'index.html'; return; }
       const dk = e.target.closest('[data-dk]');
       if (dk) { try { localStorage.setItem('sg_dark', dk.dataset.dk); } catch (er) { /* */ } applyTheme(); document.querySelectorAll('.sg-panelbox iframe').forEach(f => { try { f.contentDocument.documentElement.dataset.dk = dk.dataset.dk; } catch (er) { /* */ } }); draw(); return; }
       const cp = e.target.closest('[data-copy]');

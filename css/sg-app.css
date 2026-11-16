@@ -459,3 +459,17 @@ body.sg-drawer-open .sg-tick-arrow { transform: rotate(180deg); }
 .sg-line-btn { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; border-radius: 14px; background: #06C755; color: #fff; font-weight: 800; font-size: 15px; text-decoration: none; margin-bottom: 8px; }
 .sg-av-line { position: relative; display: inline-flex; border-radius: 50%; }
 .sg-av-line::after { content: ''; position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; border-radius: 50%; background: #06C755; box-shadow: 0 0 0 2px var(--sg-card); }
+/* 開發期預覽：管理＋社群（沒有地圖）、只有管理 */
+.sg-nogame .sg-world-map, .sg-nogame .sg-corner-sw, .sg-nogame .sg-demo-tag { display: none !important; }
+.sg-nogame .sg-world { display: block; }
+.sg-nogame .sg-world-feed { position: static; margin: 0 auto; max-width: 680px; min-height: 0; border-radius: 0; box-shadow: none; background: none; transform: none; }
+.sg-nogame .sg-taskcol { position: fixed; z-index: 60; right: 8px; bottom: calc(76px + env(safe-area-inset-bottom)); }
+.sg-nogame .sg-taskcol .sg-rb { color: var(--sg-text); }
+.sg-nogame .sg-main { padding-right: 58px; }
+.sg-nosocial .sg-world-feed, .sg-nosocial .sg-ticker { display: none !important; }
+.sg-nosocial .sg-bottom { justify-content: space-between; }
+.sg-dash { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; max-width: 680px; margin: 12px auto; padding: 0 12px; }
+.sg-dash-tile { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 16px; border-radius: 16px; border: 1px solid var(--sg-line); background: var(--sg-card); color: var(--sg-text); text-decoration: none; text-align: left; cursor: pointer; font-family: inherit; min-height: 104px; }
+.sg-dash-tile .ic { font-size: 26px; } .sg-dash-tile .tt { font-size: 17px; font-weight: 800; } .sg-dash-tile .sb { font-size: 13px; color: var(--sg-muted); }
+@media (min-width: 1024px) and (orientation: landscape) { .sg-nogame .sg-main { padding-right: 90px; } .sg-dash { grid-template-columns: repeat(3, minmax(0, 1fr)); } .sg-nogame .sg-taskcol { right: 22px; bottom: 112px; } }
+.sg-nogame .sg-grab { display: none; }
