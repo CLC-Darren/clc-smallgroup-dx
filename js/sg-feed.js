@@ -80,28 +80,38 @@
   }
   // 分享：代禱只有本人能分享（別人的代禱事項不外流）；系統自動貼文不分享
   const canShare = p => !['birthday', 'goal', 'gift'].includes(p.type) && (p.type !== 'prayer' || p.author === me.personId);
-  F.share = function (p) {
+  F.share = function (p, only) {   // only：發文時勾選的平台（沒給就全部顯示）
     const url = 'https://clc-dx04.pages.dev/sg/';   // 之後可換成單篇貼文的公開網址
     const text = `${p.ref ? p.ref + '｜' : ''}${p.text || ''}\n— 漢威牧區`, e = encodeURIComponent;
-    const T = [['Facebook', '#1877F2', `https://www.facebook.com/sharer/sharer.php?u=${e(url)}&quote=${e(text)}`],
+    let T = [['Facebook', '#1877F2', `https://www.facebook.com/sharer/sharer.php?u=${e(url)}&quote=${e(text)}`],
       ['LINE', '#06C755', `https://social-plugins.line.me/lineit/share?url=${e(url)}&text=${e(text)}`],
       ['Threads', '#101010', `https://www.threads.net/intent/post?text=${e(text + '\n' + url)}`],
       ['X', '#101010', `https://x.com/intent/post?text=${e(text)}&url=${e(url)}`]];
-    const dlg = U.sheet(`<h3>分享到</h3><p class="sg-note" style="margin:4px 0 12px">轉貼到你常用的社群，邀請更多朋友認識小組。</p>
-      <div class="sg-share">${T.map(([n, c, href]) => `<a href="${href}" target="_blank" rel="noopener" style="background:${c}">${n}</a>`).join('')}
-        <button type="button" data-sh="ig" style="background:linear-gradient(45deg,#F58529,#DD2A7B,#8134AF)">Instagram</button>
+    const want = k => !only || only.includes(k);
+    T = T.filter(t => want(t[0]));
+    const qtMine = p.type === 'qt' && p.author === me.personId;
+    let counted = false;
+    const shared = async () => {   // QT：真的按了分享出去，才把今天的 QT 打勾（網頁沒辦法確認對方平台是否真的發出，按下分享就算）
+      if (!qtMine || counted) return; counted = true;
+      const drawn = await F.setTask('qt', true); U.toast('已分享，今天的 QT 打勾了 ✓');
+      if (drawn) setTimeout(() => F.showCard(drawn), 600);
+    };
+    const dlg = U.sheet(`<h3>分享到</h3><p class="sg-note" style="margin:4px 0 12px">${only ? '依序點你選的平台，一個一個分享出去。' : '轉貼到你常用的社群，邀請更多朋友認識小組。'}${qtMine ? '<br>分享出去之後，今天的 QT 會自動打勾。' : ''}</p>
+      <div class="sg-share">${T.map(([n, c, href]) => `<a href="${href}" target="_blank" rel="noopener" data-sh="out" style="background:${c}">${n}</a>`).join('')}
+        ${want('Instagram') ? '<button type="button" data-sh="ig" style="background:linear-gradient(45deg,#F58529,#DD2A7B,#8134AF)">Instagram</button>' : ''}
         <button type="button" data-sh="copy">🔗 複製文字</button>${navigator.share ? '<button type="button" data-sh="more">⋯ 其他 App</button>' : ''}</div>
       <button type="button" class="sg-btn" data-dlg-close style="width:100%;margin-top:12px">關閉</button>`);
     const copy = () => navigator.clipboard ? navigator.clipboard.writeText(text + '\n' + url) : Promise.reject();
     dlg.addEventListener('click', async ev => {
       const b = ev.target.closest('[data-sh]'); if (!b) return;
+      if (b.dataset.sh === 'out') { b.style.opacity = '.55'; b.textContent = '✓ ' + b.textContent.replace(/^✓ /, ''); shared(); return; }
       if (b.dataset.sh === 'copy') { copy().then(() => U.toast('已複製')).catch(() => {}); }
       if (b.dataset.sh === 'ig') {   // IG 沒有網頁分享：手機用系統分享（可帶照片），電腦先複製文字再開 IG
         const img = (p.media || []).find(x => x.type === 'image');
-        if (navigator.share && img) { try { const blob = await (await fetch(img.src)).blob(); const f = new File([blob], 'photo.webp', { type: blob.type }); if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], text }); return; } } catch (er) { /* */ } }
-        copy().finally(() => { U.toast('文字已複製，到 Instagram 貼上即可'); window.open('https://www.instagram.com/', '_blank', 'noopener'); });
+        if (navigator.share && img) { try { const blob = await (await fetch(img.src)).blob(); const f = new File([blob], 'photo.webp', { type: blob.type }); if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], text }); shared(); return; } } catch (er) { /* */ } }
+        shared(); copy().finally(() => { U.toast('文字已複製，到 Instagram 貼上即可'); window.open('https://www.instagram.com/', '_blank', 'noopener'); });
       }
-      if (b.dataset.sh === 'more') { try { await navigator.share({ title: '漢威牧區', text, url }); } catch (er) { /* 取消 */ } }
+      if (b.dataset.sh === 'more') { try { await navigator.share({ title: '漢威牧區', text, url }); shared(); } catch (er) { /* 取消 */ } }
     });
   };
 
@@ -146,8 +156,9 @@
       <label class="sg-lab" for="cText">內容</label><textarea class="sg-in" id="cText" rows="5" maxlength="1500"></textarea>
       <label class="sg-lab">誰看得到</label>
       <div class="sg-seg" id="cScope">${D.myGroup ? `<button type="button" data-s="group" aria-pressed="true">${esc(D.myGroup.name)}</button>` : ''}<button type="button" data-s="district" aria-pressed="${!D.myGroup}">整個牧區</button></div>
-      <p class="sg-note" id="cQtNote" style="margin-top:10px">分享 QT 也會幫你把今天的「QT」任務打勾。</p>
-      <div class="sg-seg" style="margin-top:12px"><button type="button" id="cShare" aria-pressed="false">↗ 發佈後同時分享到 Facebook／LINE／IG／Threads</button></div>
+      <label class="sg-lab">發佈後同時分享到（可複選，不選就只發在這裡）</label>
+      <div class="sg-chipbar" id="cShare" style="flex-wrap:wrap">${['Facebook', 'LINE', 'Instagram', 'Threads', 'X'].map(n => `<button type="button" data-p="${n}" aria-pressed="false">${n}</button>`).join('')}</div>
+      <p class="sg-note" id="cQtNote" style="margin-top:6px">QT 要分享到社群，才會把今天的「QT」任務打勾。</p>
       <div style="display:flex;gap:8px;margin-top:14px"><button type="button" class="sg-btn" data-dlg-close style="flex:1">取消</button><button type="button" class="sg-btn sg-btn-teal" id="cSend" style="flex:2">發佈</button></div>`);
     let cur = type, scope = D.myGroup ? 'group' : 'district';
     const sync = () => {
@@ -159,7 +170,7 @@
     sync();
     dlg.querySelector('#cType').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { cur = b.dataset.k; if (cur === 'testimony') setScope('district'); sync(); } });
     const setScope = s => { scope = s; dlg.querySelectorAll('#cScope button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.s === s))); };
-    dlg.querySelector('#cShare').addEventListener('click', e => { const b = e.currentTarget; b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')); });
+    dlg.querySelector('#cShare').addEventListener('click', e => { const b = e.target.closest('[data-p]'); if (b) b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')); });
     dlg.querySelector('#cScope').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setScope(b.dataset.s); });
     dlg.querySelector('#cSend').addEventListener('click', async () => {
       const text = dlg.querySelector('#cText').value.trim();
@@ -167,11 +178,10 @@
       const data = { type: cur, author: me.personId, groupId: D.me.groupId || '', scope, text, ref: cur === 'qt' ? dlg.querySelector('#cRef').value.trim() : '',
         reactions: { amen: [], heart: [] }, prayedBy: [], comments: [], createdAt: firebase.firestore.FieldValue.serverTimestamp() };
       await db.collection('posts').add(data);
-      if (cur === 'qt') await F.setTask('qt', true);
-      const share = dlg.querySelector('#cShare').getAttribute('aria-pressed') === 'true';
+      const share = [...dlg.querySelectorAll('#cShare [aria-pressed="true"]')].map(b => b.dataset.p);
       dlg.close(); U.toast('已發佈');
       if (onDone) onDone();
-      if (share) F.share(data);
+      if (share.length) F.share(data, share);
     });
   };
 
