@@ -1,6 +1,6 @@
 /* 漢威牧區｜外框與共用工具
  * - Header：照 DX 標準（深色、Logo、右邊只有 Superuser 的 🔐）。
- * - Header 下面：本站的 App 列（標題／問候、預覽身分、齒輪：深淺色、後台、登出）。
+ * - Header 下面：本站的 App 列（標題／問候、齒輪：深淺色、後台、登出）；右下角暫時的浮動測試鈕（切換身分、色票）。
  * - 導覽：手機底部分頁列、電腦左側選單；依身分顯示不同分頁。
  * - 身分（靜態階段）：存在 localStorage sg_session；接 Firebase 後改成真正的登入。
  * 每頁：<body data-page="home|care|fellowship|members|me|admin" data-roles="district,leader,member">
@@ -181,11 +181,10 @@
     mapBox.append(hud);
   }
 
-  // ---------- App 列：標題、預覽身分、齒輪 ----------
+  // ---------- App 列：標題、齒輪 ----------
   const appbar = $('sgAppbar');
   if (appbar) {
     appbar.insertAdjacentHTML('beforeend', `<div class="sg-appbar-tools">
-      <button type="button" class="sg-demo" id="demoBtn" title="暫時的按鈕：切換身分預覽畫面，正式版會拿掉">🧪 預覽：${ROLE_LABEL[session.role]}</button>
       <button type="button" class="sg-gear" id="gearBtn" aria-label="設定" aria-haspopup="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
     </div>`);
     const pop = document.createElement('div');
@@ -205,18 +204,42 @@
         ${SGU.isDistrict() ? '<a class="sg-pop-item" href="admin-settings.html">⚙️ 後台</a>' : ''}
         <button type="button" class="sg-pop-item" data-logout>↪ 登出</button>`);
     });
-    $('demoBtn').addEventListener('click', e => {
-      open(e.currentTarget, `<div class="sg-pop-sec"><div class="sg-pop-lab">切換預覽身分</div>
-        ${DEMO.map(d => `<button type="button" class="sg-pop-item" data-demo="${d.personId}"${d.personId === session.personId ? ' aria-checked="true"' : ''}>${d.personId === session.personId ? '✓ ' : ''}${esc(d.label)}</button>`).join('')}
-        <p class="sg-pop-note">這是暫時的按鈕，方便你看不同身分看到的畫面。正式版會拿掉，改成真正的登入。</p></div>`);
-    });
     pop.addEventListener('click', e => {
       const th = e.target.closest('[data-theme]');
       if (th) { try { th.dataset.theme ? localStorage.setItem('sg_theme', th.dataset.theme) : localStorage.removeItem('sg_theme'); } catch (er) { /* */ } applyTheme(); pop.querySelectorAll('[data-theme]').forEach(b => b.setAttribute('aria-pressed', String(b === th))); return; }
       if (e.target.closest('[data-logout]')) { setSession(null); location.replace('login.html'); return; }
-      const dm = e.target.closest('[data-demo]');
-      if (dm) { const d = DEMO.find(x => x.personId === dm.dataset.demo); setSession({ personId: d.personId, role: d.role }); location.reload(); }
     });
-    document.addEventListener('click', e => { if (!e.target.closest('#sgPop, #gearBtn, #demoBtn')) pop.classList.add('hidden'); });
+    document.addEventListener('click', e => { if (!e.target.closest('#sgPop, #gearBtn')) pop.classList.add('hidden'); });
+  }
+  // ---------- 浮動測試鈕（暫時，正式版拿掉）：身分、頁面、切換身分、回登入頁、材質色票 ----------
+  {
+    const fab = document.createElement('button');
+    fab.type = 'button'; fab.className = 'sg-testfab'; fab.textContent = '🧪'; fab.setAttribute('aria-label', '測試面板（暫時）');
+    const panel = document.createElement('div');
+    panel.className = 'sg-testpanel hidden'; panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-label', '測試面板');
+    document.body.append(panel, fab);
+    const draw = () => {
+      const me = DEMO.find(d => d.personId === session.personId);
+      const file = location.pathname.split('/').pop() || 'index.html';
+      const title = (document.title.split('|')[1] || document.title).trim();
+      const T = window.SGTerrain;
+      const sw = T ? Object.values(T.PALETTE).map(m => `<div class="sg-swatch"><span class="n">${esc(m.name)}</span><span class="u">${esc(m.use)}</span>
+          <span class="cs">${m.c.map(c => `<span style="background:${c}" title="${c}" data-copy="${c}">${c.slice(1)}</span>`).join('')}</span></div>`).join('')
+        + `<div class="sg-swatch"><span class="n">建材</span><span class="u">${T.BUILD.map(b => b[0]).join('／')}</span><span class="cs">${T.BUILD.map(b => `<span style="background:${b[1]}" title="${b[0]} ${b[1]}" data-copy="${b[1]}"></span>`).join('')}</span></div>`
+        : '<p class="sg-note">色票在「世界」「我的領地」頁才會顯示。</p>';
+      panel.innerHTML = `<h3>現在</h3><div class="now">身分：<b>${esc(me ? me.label : ROLE_LABEL[session.role])}</b><br>頁面：<b>${esc(title)}</b>（${esc(file)}）</div>
+        <h3>切換身分</h3><div class="roles">${DEMO.map(d => `<button type="button" data-demo="${d.personId}" aria-pressed="${d.personId === session.personId}">${ROLE_LABEL[d.role]}</button>`).join('')}</div>
+        <h3>登入</h3><button type="button" class="go" data-login>↪ 回登入頁</button>
+        <h3>材質色票（亮面／暗面／陰影；點色塊複製色碼）</h3>${sw}`;
+    };
+    fab.addEventListener('click', () => { if (panel.classList.contains('hidden')) draw(); panel.classList.toggle('hidden'); });
+    panel.addEventListener('click', e => {
+      const dm = e.target.closest('[data-demo]');
+      if (dm) { const d = DEMO.find(x => x.personId === dm.dataset.demo); setSession({ personId: d.personId, role: d.role }); location.reload(); return; }
+      if (e.target.closest('[data-login]')) { setSession(null); location.replace('login.html'); return; }
+      const cp = e.target.closest('[data-copy]');
+      if (cp && navigator.clipboard) navigator.clipboard.writeText(cp.dataset.copy).then(() => { cp.textContent = '✓'; setTimeout(draw, 700); }).catch(() => {});
+    });
+    document.addEventListener('click', e => { if (!e.target.closest('.sg-testpanel, .sg-testfab')) panel.classList.add('hidden'); });
   }
 })();
