@@ -102,15 +102,15 @@
   line([[35.6, 33.2], [35.55, 32.7], [35.52, 32.2], [35.5, 31.75], [35.45, 31.0], [35.2, 30.2], [35.0, 29.55]], .07, .3, 'valley');   // 約旦河谷（往下凹）
   line([[35.58, 32.82]], .07, .3, 'water'); line([[35.5, 31.72], [35.45, 31.15]], .055, .2, 'water');   // 加利利海、死海
 
-  el('rect', { x: -400, y: -400, width: 1700, height: 1500, fill: '#2E8E9E' }, W);
+  el('rect', { x: -400, y: -400, width: 1700, height: 1500, fill: '#1A8C99' }, W);
   const proj0 = (gx, gy) => ll(LON0 + gx * R0, LAT0 - gy * R0);
   const R = T.render(W, { id: 'w', G, mats: MATS, proj: proj0, noise: .5, landBlur: [1, 1], seaBlur: [3, 2], simplify: 1.6, shadow: [1.1, .55],
-    water: [{ t: .02, c: '#3FA3B0' }, { t: .1, c: '#57BFC4' }, { t: .3, c: '#74CFC6' }, { t: .4, c: '#8EDDD3' }],
+    water: [{ t: .01, c: '#1F99A4' }, { t: .05, c: '#27A8AF' }, { t: .12, c: '#33BDB9' }, { t: .22, c: '#46C8BF' }, { t: .32, c: '#5FD3C4' }, { t: .41, c: '#7FE0CF' }],   // 海：越近岸越淺
     levels: [{ t: .15, h: 1.5, base: 'sand', patch: ['water', 'valley'] }, { t: .55, h: 3.5, base: 'grass' }, { t: 1.5, h: 7, base: 'grass' },
       { t: 2.5, h: 10.5, base: 'grass' }, { t: 3.5, h: 14, base: 'grass' }, { t: 4.5, h: 17.5, base: 'grass' }] });
   const proj = (lon, lat) => { const p = ll(lon, lat), g = toG(lon, lat); return [p[0], p[1] - R.liftAt(g[0], g[1])]; };   // 貼在地表上
   // 河流（約旦河、奧倫提斯河、尼羅河、米安得河、台伯河）
-  const river = pts => el('polyline', { points: pts.map(p => proj(p[0], p[1]).join(',')).join(' '), fill: 'none', stroke: '#5FC3D3', 'stroke-width': 2.2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, W);
+  const river = pts => el('polyline', { points: pts.map(p => proj(p[0], p[1]).join(',')).join(' '), fill: 'none', stroke: '#4FCFD0', 'stroke-width': 2.2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, W);
   river([[35.65, 33.25], [35.6, 32.9]]); river([[35.57, 32.72], [35.55, 32.2], [35.5, 31.8]]);
   river([[36.3, 34.4], [36.55, 35.3], [36.5, 36.0], [36.15, 36.2], [35.95, 36.05]]);
   river([[31.0, 27.3], [31.1, 29.0], [31.15, 30.3], [30.4, 31.45]]); river([[31.15, 30.3], [31.8, 31.45]]);
@@ -191,9 +191,9 @@
     G.m[fy * NX + fx] = MATS.indexOf(cell(Math.min(CW - 1, Math.floor(fx / F)), Math.min(CH - 1, Math.floor(fy / F)))[1]);
   }
   const iso0 = (gx, gy) => [(gx / F - PAD) * SX, (gy / F - PAD) * SY];   // 北朝上：x＝東、y＝南
-  el('rect', { x: -3000, y: -3000, width: 6000, height: 6000, fill: '#2E8E9E' }, L);
+  el('rect', { x: -3000, y: -3000, width: 6000, height: 6000, fill: '#1A8C99' }, L);
   const R = T.render(L, { id: 'l', G, mats: MATS, proj: iso0, noise: .35, landBlur: [1, 2], seaBlur: [3, 2], simplify: 1.3, shadow: [.9, .45],
-    water: [{ t: .03, c: '#3FA3B0' }, { t: .12, c: '#57BFC4' }, { t: .3, c: '#74CFC6' }, { t: .4, c: '#8EDDD3' }],
+    water: [{ t: .01, c: '#1F99A4' }, { t: .05, c: '#27A8AF' }, { t: .12, c: '#33BDB9' }, { t: .22, c: '#46C8BF' }, { t: .32, c: '#5FD3C4' }, { t: .41, c: '#7FE0CF' }],   // 海：越近岸越淺
     levels: [{ t: .15, h: 4, base: 'sand', patch: ['water', 'valley'] }, { t: .55, h: 10, base: 'grass' }, { t: 1.5, h: 20, base: 'grass' }, { t: 2.5, h: 30, base: 'grass' },
       { t: 3.5, h: 40, base: 'grass' }, { t: 4.5, h: 50, base: 'grass' }, { t: 5.5, h: 62, base: 'grass' }] });
   // 地表上的點（c＝西→東第幾格、r＝北→南第幾格）

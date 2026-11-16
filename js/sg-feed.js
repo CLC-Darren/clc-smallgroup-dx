@@ -57,6 +57,7 @@
     } else {
       body = `${head(a, when, where, scopeTxt, t)}<div class="sg-post-body">${p.ref ? `<span class="sg-post-ref">${esc(p.ref)}</span><br>` : ''}${esc(p.text)}</div>`;
     }
+    body += media(p.media);
     const amen = p.reactions && p.reactions.amen || [], heart = p.reactions && p.reactions.heart || [], prayed = p.prayedBy || [], cms = p.comments || [];
     const counts = [amen.length ? `🙏 ${amen.length}` : '', heart.length ? `❤️ ${heart.length}` : '', p.type === 'prayer' && prayed.length ? `${prayed.length} 人為你禱告` : '', cms.length ? `${cms.length} 則留言` : ''].filter(Boolean);
     const act = p.type === 'prayer'
@@ -64,12 +65,46 @@
       : `<button type="button" data-act="amen" aria-pressed="${pressed(amen)}">🙏 阿們</button><button type="button" class="heart" data-act="heart" aria-pressed="${pressed(heart)}">❤️ 讚</button>`;
     return `<article class="sg-card sg-post" data-post="${esc(p.id)}">${body}
       ${counts.length ? `<div class="sg-post-count">${counts.join('<span>・</span>')}</div>` : ''}
-      <div class="sg-post-act">${act}<button type="button" data-act="comment">💬 ${p.type === 'birthday' ? '送祝福' : '留言'}</button></div>
+      <div class="sg-post-act">${act}<button type="button" data-act="comment">💬 ${p.type === 'birthday' ? '送祝福' : '留言'}</button>${canShare(p) ? '<button type="button" data-act="share">↗ 分享</button>' : ''}</div>
       <div class="sg-comments${cms.length || F.openCm === p.id ? '' : ' hidden'}">
         ${cms.map(c => { const w = D.pmap[c.by]; return `<div class="sg-cm">${U.avatar(w, 28)}<div class="bubble"><b>${esc(w ? w.name : '')}</b>${esc(c.text)}</div></div>`; }).join('')}
         <form class="sg-cm-form" data-cm-form><input name="t" maxlength="300" placeholder="${p.type === 'birthday' ? '寫下生日祝福…' : '寫留言…'}" autocomplete="off"><button class="sg-btn sg-btn-teal" type="submit">送出</button></form>
       </div></article>`;
   };
+  // 照片（1～3 張排成格子）、影片（點了才載入）
+  function media(m) {
+    if (!m || !m.length) return '';
+    return `<div class="sg-media n${Math.min(m.length, 3)}">${m.slice(0, 4).map(x => x.type === 'video'
+      ? `<video src="${esc(x.src)}" poster="${esc(x.poster || '')}" controls playsinline preload="none"></video>`
+      : `<img src="${esc(x.src)}" alt="" loading="lazy">`).join('')}</div>`;
+  }
+  // 分享：代禱只有本人能分享（別人的代禱事項不外流）；系統自動貼文不分享
+  const canShare = p => !['birthday', 'goal', 'gift'].includes(p.type) && (p.type !== 'prayer' || p.author === me.personId);
+  F.share = function (p) {
+    const url = 'https://clc-dx04.pages.dev/sg/';   // 之後可換成單篇貼文的公開網址
+    const text = `${p.ref ? p.ref + '｜' : ''}${p.text || ''}\n— 漢威牧區`, e = encodeURIComponent;
+    const T = [['Facebook', '#1877F2', `https://www.facebook.com/sharer/sharer.php?u=${e(url)}&quote=${e(text)}`],
+      ['LINE', '#06C755', `https://social-plugins.line.me/lineit/share?url=${e(url)}&text=${e(text)}`],
+      ['Threads', '#101010', `https://www.threads.net/intent/post?text=${e(text + '\n' + url)}`],
+      ['X', '#101010', `https://x.com/intent/post?text=${e(text)}&url=${e(url)}`]];
+    const dlg = U.sheet(`<h3>分享到</h3><p class="sg-note" style="margin:4px 0 12px">轉貼到你常用的社群，邀請更多朋友認識小組。</p>
+      <div class="sg-share">${T.map(([n, c, href]) => `<a href="${href}" target="_blank" rel="noopener" style="background:${c}">${n}</a>`).join('')}
+        <button type="button" data-sh="ig" style="background:linear-gradient(45deg,#F58529,#DD2A7B,#8134AF)">Instagram</button>
+        <button type="button" data-sh="copy">🔗 複製文字</button>${navigator.share ? '<button type="button" data-sh="more">⋯ 其他 App</button>' : ''}</div>
+      <button type="button" class="sg-btn" data-dlg-close style="width:100%;margin-top:12px">關閉</button>`);
+    const copy = () => navigator.clipboard ? navigator.clipboard.writeText(text + '\n' + url) : Promise.reject();
+    dlg.addEventListener('click', async ev => {
+      const b = ev.target.closest('[data-sh]'); if (!b) return;
+      if (b.dataset.sh === 'copy') { copy().then(() => U.toast('已複製')).catch(() => {}); }
+      if (b.dataset.sh === 'ig') {   // IG 沒有網頁分享：手機用系統分享（可帶照片），電腦先複製文字再開 IG
+        const img = (p.media || []).find(x => x.type === 'image');
+        if (navigator.share && img) { try { const blob = await (await fetch(img.src)).blob(); const f = new File([blob], 'photo.webp', { type: blob.type }); if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], text }); return; } } catch (er) { /* */ } }
+        copy().finally(() => { U.toast('文字已複製，到 Instagram 貼上即可'); window.open('https://www.instagram.com/', '_blank', 'noopener'); });
+      }
+      if (b.dataset.sh === 'more') { try { await navigator.share({ title: '漢威牧區', text, url }); } catch (er) { /* 取消 */ } }
+    });
+  };
+
   function head(a, when, where, scopeTxt, t) {
     return `<div class="sg-post-h">${U.avatar(a, 40)}<div style="min-width:0"><div class="who">${esc(a ? a.name : '')}</div><div class="meta">${esc(when)}・${esc(where)}${scopeTxt}</div></div>
       ${t.bg ? `<span class="sg-post-tag" style="background:${t.bg};color:${t.fg}">${t.label}</span>` : ''}</div>`;
@@ -81,6 +116,7 @@
       const b = e.target.closest('[data-act]'); if (!b) return;
       const el = b.closest('[data-post]'), p = F.D.posts.find(x => x.id === el.dataset.post); if (!p) return;
       const toggle = (arr) => { const s = new Set(arr || []); s.has(me.personId) ? s.delete(me.personId) : s.add(me.personId); return [...s]; };
+      if (b.dataset.act === 'share') { F.share(p); return; }
       if (b.dataset.act === 'comment') { F.openCm = p.id; el.querySelector('.sg-comments').classList.remove('hidden'); el.querySelector('[data-cm-form] input').focus(); return; }
       if (b.dataset.act === 'pray') p.prayedBy = toggle(p.prayedBy);
       else { p.reactions = p.reactions || { amen: [], heart: [] }; p.reactions[b.dataset.act] = toggle(p.reactions[b.dataset.act]); }
@@ -111,6 +147,7 @@
       <label class="sg-lab">誰看得到</label>
       <div class="sg-seg" id="cScope">${D.myGroup ? `<button type="button" data-s="group" aria-pressed="true">${esc(D.myGroup.name)}</button>` : ''}<button type="button" data-s="district" aria-pressed="${!D.myGroup}">整個牧區</button></div>
       <p class="sg-note" id="cQtNote" style="margin-top:10px">分享 QT 也會幫你把今天的「QT」任務打勾。</p>
+      <div class="sg-seg" style="margin-top:12px"><button type="button" id="cShare" aria-pressed="false">↗ 發佈後同時分享到 Facebook／LINE／IG／Threads</button></div>
       <div style="display:flex;gap:8px;margin-top:14px"><button type="button" class="sg-btn" data-dlg-close style="flex:1">取消</button><button type="button" class="sg-btn sg-btn-teal" id="cSend" style="flex:2">發佈</button></div>`);
     let cur = type, scope = D.myGroup ? 'group' : 'district';
     const sync = () => {
@@ -122,6 +159,7 @@
     sync();
     dlg.querySelector('#cType').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { cur = b.dataset.k; if (cur === 'testimony') setScope('district'); sync(); } });
     const setScope = s => { scope = s; dlg.querySelectorAll('#cScope button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.s === s))); };
+    dlg.querySelector('#cShare').addEventListener('click', e => { const b = e.currentTarget; b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')); });
     dlg.querySelector('#cScope').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setScope(b.dataset.s); });
     dlg.querySelector('#cSend').addEventListener('click', async () => {
       const text = dlg.querySelector('#cText').value.trim();
@@ -130,8 +168,10 @@
         reactions: { amen: [], heart: [] }, prayedBy: [], comments: [], createdAt: firebase.firestore.FieldValue.serverTimestamp() };
       await db.collection('posts').add(data);
       if (cur === 'qt') await F.setTask('qt', true);
+      const share = dlg.querySelector('#cShare').getAttribute('aria-pressed') === 'true';
       dlg.close(); U.toast('已發佈');
       if (onDone) onDone();
+      if (share) F.share(data);
     });
   };
 

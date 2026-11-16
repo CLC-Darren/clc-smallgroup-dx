@@ -15,7 +15,8 @@
   // ---------- 深淺色 ----------
   const mq = window.matchMedia('(prefers-color-scheme: dark)');
   const getTheme = () => { try { return localStorage.getItem('sg_theme') || ''; } catch (e) { return ''; } };
-  const applyTheme = () => { const t = getTheme(); document.documentElement.classList.toggle('dark', t ? t === 'dark' : mq.matches); };
+  const getDark = () => { try { return localStorage.getItem('sg_dark') || 'a'; } catch (e) { return 'a'; } };   // 深色候選：a 石板藍、b 暖灰、c 深海綠、o 原本
+  const applyTheme = () => { const t = getTheme(); document.documentElement.classList.toggle('dark', t ? t === 'dark' : mq.matches); document.documentElement.dataset.dk = getDark(); };
   mq.addEventListener('change', applyTheme);
   applyTheme();
 
@@ -327,6 +328,7 @@
         : '<p class="sg-note">色票在「世界」「我的領地」頁才會顯示。</p>';
       panel.innerHTML = `<h3>現在</h3><div class="now">身分：<b>${esc(me ? me.label : ROLE_LABEL[session.role])}</b><br>頁面：<b>${esc(title)}</b>（${esc(file)}）</div>
         <h3>切換身分</h3><div class="roles">${DEMO.map(d => `<button type="button" data-demo="${d.personId}" aria-pressed="${d.personId === session.personId}">${ROLE_LABEL[d.role]}</button>`).join('')}</div>
+        <h3>深色模式（候選，切到深色才看得出來）</h3><div class="roles">${[['a', '石板藍'], ['b', '暖灰'], ['c', '深海綠'], ['o', '原本']].map(([k, l]) => `<button type="button" data-dk="${k}" aria-pressed="${getDark() === k}">${l}</button>`).join('')}</div>
         <h3>登入</h3><button type="button" class="go" data-login>↪ 回登入頁</button>
         <h3>材質色票（亮面／暗面／陰影；點色塊複製色碼）</h3>${sw}`;
     };
@@ -335,6 +337,8 @@
       const dm = e.target.closest('[data-demo]');
       if (dm) { const d = DEMO.find(x => x.personId === dm.dataset.demo); setSession({ personId: d.personId, role: d.role }); location.reload(); return; }
       if (e.target.closest('[data-login]')) { setSession(null); location.replace('login.html'); return; }
+      const dk = e.target.closest('[data-dk]');
+      if (dk) { try { localStorage.setItem('sg_dark', dk.dataset.dk); } catch (er) { /* */ } applyTheme(); document.querySelectorAll('.sg-panelbox iframe').forEach(f => { try { f.contentDocument.documentElement.dataset.dk = dk.dataset.dk; } catch (er) { /* */ } }); draw(); return; }
       const cp = e.target.closest('[data-copy]');
       if (cp && navigator.clipboard) navigator.clipboard.writeText(cp.dataset.copy).then(() => { cp.textContent = '✓'; setTimeout(draw, 700); }).catch(() => {});
     });

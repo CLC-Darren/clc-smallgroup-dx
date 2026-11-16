@@ -1,11 +1,11 @@
 /**
  * 漢威牧區｜假資料庫（靜態階段用）
  * 模仿 Firebase Firestore compat 的常用寫法（collection / doc / where / onSnapshot / batch…），
- * 資料存在瀏覽器 localStorage（sg_mockdb_v3）。
+ * 資料存在瀏覽器 localStorage（sg_mockdb_v4）。
  * 接上真的 Firebase 時：頁面改載入 firebase-*-compat.js，並移除本檔與 sg-mock-data.js，其他程式不用改。
  */
 (function () {
-  const KEY = 'sg_mockdb_v3';
+  const KEY = 'sg_mockdb_v4';   // v4：加了有照片、影片的貼文
   let store;
   try { store = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { store = null; }
   if (!store) { store = (window.SG_SEED && window.SG_SEED()) || {}; persist(); }

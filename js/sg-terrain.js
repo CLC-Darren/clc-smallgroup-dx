@@ -7,20 +7,20 @@
 
   // ---------- 材質色票：[亮面, 暗面, 陰影] ----------
   const PALETTE = {
-    deep: { name: '深海', use: '海（遠）', c: ['#2E8E9E'] },
-    near: { name: '近岸', use: '海（近岸）', c: ['#57BFC4'] },
-    shallow: { name: '淺灘', use: '岸邊一圈', c: ['#8EDDD3', '#74CFC6'] },
-    water: { name: '河、湖', use: '約旦河、加利利海、尼羅河', c: ['#5FC3D3', '#47AFC2'] },
-    sand: { name: '沙岸', use: '海岸線', c: ['#F1E3B8', '#DCC995', '#C2AE7A'] },
-    grass: { name: '草地、平原', use: '沿海平原、加利利', c: ['#A9D46F', '#8DBB55', '#6E9B40'] },
-    dry: { name: '乾地、灌木', use: '撒瑪利亞、示非拉', c: ['#C9CF7C', '#AEB463', '#8C924C'] },
-    plateau: { name: '高原頂', use: '安納托利亞、外約旦', c: ['#E6B35A', '#CC9545', '#A87634'] },
+    deep: { name: '深海', use: '海（遠）', c: ['#1A8C99'] },
+    near: { name: '近岸', use: '海（近岸）', c: ['#33BDB9'] },
+    shallow: { name: '淺灘', use: '岸邊一圈', c: ['#7FE0CF', '#5FD3C4'] },
+    water: { name: '河、湖', use: '約旦河、加利利海、尼羅河', c: ['#4FCFD0', '#33B8BE'] },
+    sand: { name: '沙岸', use: '海岸線', c: ['#F3E2A6', '#E2CB86', '#C9AE6A'] },
+    grass: { name: '草地、平原', use: '沿海平原、加利利', c: ['#9CCB45', '#7DB236', '#5E8F2B'] },
+    dry: { name: '乾地、灌木', use: '撒瑪利亞、示非拉', c: ['#C3C85A', '#A3A946', '#828737'] },
+    plateau: { name: '高原頂', use: '安納托利亞、外約旦', c: ['#EFA65A', '#D5874A', '#B06A3C'] },
     lime: { name: '石灰岩', use: '猶大山地、希臘', c: ['#EDE3CF', '#CDBFA3', '#A99A7E'] },
-    red: { name: '紅岩、花崗岩', use: '西奈山、以東', c: ['#C9654A', '#A24E39', '#7C3A2B'] },
-    cliff: { name: '懸崖側面', use: '台地邊緣', c: ['#B9A88E', '#9A8A72', '#7A6C58'] },
-    mount: { name: '高山', use: '托魯斯、黑門山', c: ['#9A9088', '#756C64', '#5A524C', '#FFFFFF'] },
-    desert: { name: '沙漠', use: '埃及、曠野', c: ['#EAD9A0', '#D4C084', '#B8A46A'] },
-    forest: { name: '樹林', use: '黎巴嫩香柏、橄欖園', c: ['#5E9E55', '#4A8344', '#376634'] }
+    red: { name: '紅岩、花崗岩', use: '西奈山、以東', c: ['#C8694A', '#A5523C', '#7E3E30'] },
+    cliff: { name: '懸崖側面', use: '台地邊緣', c: ['#5E7468', '#4A5F55', '#384A43'] },
+    mount: { name: '高山', use: '托魯斯、黑門山', c: ['#7C8A86', '#5F6D6A', '#4A5654', '#FFFFFF'] },
+    desert: { name: '沙漠', use: '埃及、曠野', c: ['#F2C27C', '#DDA463', '#BE8550'] },
+    forest: { name: '樹林', use: '黎巴嫩香柏、橄欖園', c: ['#4E8F48', '#3C7440', '#2C5A35'] }
   };
   const BUILD = [['白石牆', '#F4EBDD'], ['泥磚', '#D9B98C'], ['木', '#C98B55'], ['紅瓦', '#E86F51'], ['藍綠屋頂', '#3BB3BD'], ['帳棚布', '#FFFFFF']];
   const ALIAS = { valley: 'grass' };                  // 河谷：顏色同草地，但只出現在低處

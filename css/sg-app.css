@@ -262,7 +262,7 @@ html.dark #sheetBody .sg-ptab button[aria-pressed="true"] { background: #636366;
 .m-sheet { top: 0; }
 
 /* ---------- P1-0：世界／我的領地（地圖固定、下方面板往上蓋） ---------- */
-.sg-world-map { position: sticky; top: var(--sg-hd); height: 58vh; overflow: hidden; background: #2E8E9E; z-index: 0; }
+.sg-world-map { position: sticky; top: var(--sg-hd); height: 58vh; overflow: hidden; background: #1A8C99; z-index: 0; }
 .sg-world-map::after { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(rgba(255,255,255,.26), rgba(255,255,255,0) 32%); }   /* 遠處微霧 */
 .sg-world-map > .sg-demo-tag, .sg-world-map > .sg-map-chip { z-index: 2; }
 .sg-world-map > svg { width: 100%; height: 100%; display: block; }
@@ -394,7 +394,7 @@ body.sg-mapnav { overflow: hidden; }
 html.sg-panel { --sg-hd: 0px; }
 html.sg-panel, html.sg-panel body, html.sg-panel main { background: transparent !important; }
 html.sg-panel .sg-hd { display: none; }
-html.sg-panel .sg-main { padding-bottom: 100px; }
+html.sg-panel .sg-main { padding-bottom: 100px; margin-left: 0; }
 @media (min-width: 1024px) and (orientation: landscape) {
   .sg-panelbox { right: 420px; border-right: 1px solid var(--sg-line); }
   .sg-panel-x { display: block; }
@@ -407,3 +407,18 @@ html.sg-panel .sg-main { padding-bottom: 100px; }
 ::-webkit-scrollbar { width: 6px; height: 6px; } ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(127,127,127,.35); border-radius: 3px; } ::-webkit-scrollbar-thumb:hover { background: rgba(127,127,127,.55); }
 .sg-secnav-link { display: inline-flex; align-items: center; text-decoration: none; }
+/* 深色模式候選（Header 照 DX 固定 #090A0F，不受影響）：a 石板藍（建議）、b 暖灰、c 深海綠、o 原本 */
+html.dark[data-dk="a"] { --sg-bg: #1C2230; --sg-card: #262D3D; --sg-soft: #2F3748; --sg-text: #ECEFF4; --sg-muted: rgba(236,239,244,.62); --sg-line: rgba(255,255,255,.09); --sg-bar: rgba(28,34,48,.92); }
+html.dark[data-dk="b"] { --sg-bg: #23211F; --sg-card: #2E2B28; --sg-soft: #383430; --sg-text: #F2EEE8; --sg-muted: rgba(242,238,232,.6); --sg-line: rgba(255,255,255,.09); --sg-bar: rgba(35,33,31,.92); }
+html.dark[data-dk="c"] { --sg-bg: #14272B; --sg-card: #1D3338; --sg-soft: #254047; --sg-text: #E8F3F1; --sg-muted: rgba(232,243,241,.6); --sg-line: rgba(255,255,255,.09); --sg-bar: rgba(20,39,43,.92); --sg-teal-text: #5FE0D6; }
+/* 貼文的照片、影片 */
+.sg-media { display: grid; gap: 3px; margin: 0 -14px 8px; overflow: hidden; }
+.sg-media img, .sg-media video { width: 100%; height: 100%; object-fit: cover; display: block; background: var(--sg-soft); }
+.sg-media.n1 > * { aspect-ratio: 4 / 3; max-height: 420px; }
+.sg-media.n2 { grid-template-columns: 1fr 1fr; } .sg-media.n2 > * { aspect-ratio: 1; }
+.sg-media.n3 { grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr; aspect-ratio: 3 / 2; }
+.sg-media.n3 > :first-child { grid-row: 1 / span 2; }
+/* 分享 */
+.sg-share { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.sg-share a, .sg-share button { min-height: 46px; border-radius: 12px; border: 0; color: #fff; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; text-decoration: none; cursor: pointer; font-family: inherit; }
+.sg-share button[data-sh="copy"], .sg-share button[data-sh="more"] { background: var(--sg-soft); color: var(--sg-text); }

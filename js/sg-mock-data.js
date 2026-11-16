@@ -210,6 +210,13 @@
     post(6, 13, { type: 'milestone', author: byGroup.g_weixun[4].id, groupId: 'g_weixun', badge: 'bap', text: '今天受洗了！歡迎成為神家的一份子 💧', scope: 'district', reactions: { amen: someIds('g_weixun', 8), heart: someIds('g_zhongxiong', 5) } });
     post(7, 8, { type: 'qt', author: pid('g_zhongxiong'), groupId: 'g_zhongxiong', ref: '以賽亞書 40:31', text: '等候神的必從新得力。最近很累，求神給我新的力量。' });
 
+    // 有照片、影片的貼文（假圖：images/feed/）
+    const F_ = 'images/feed/';
+    post(0, 6, { type: 'qt', author: pid('g_shuhao'), groupId: 'g_shuhao', ref: '詩篇 5:3', text: '早晨，耶和華啊，你必聽我的聲音。今天早起在頂樓讀經，天空好美。', media: [{ type: 'image', src: F_ + 'qt-dawn.webp' }], reactions: { amen: someIds('g_shuhao', 5), heart: someIds('g_shuhao', 4) } });
+    post(1, 22, { type: 'mood', author: pid('g_jianyu'), groupId: 'g_jianyu', text: '營火之夜！謝謝大家一起唱到最後 🔥', media: [{ type: 'video', src: F_ + 'campfire.mp4', poster: F_ + 'campfire.webp' }], reactions: { amen: [], heart: someIds('g_jianyu', 9) } });
+    post(2, 21, { type: 'testimony', author: pid('g_weixun'), groupId: 'g_weixun', scope: 'district', text: '牧區海邊退修會回來，最感動的是晚上的敬拜，好久沒有這樣單純地享受神的同在。', media: [{ type: 'image', src: F_ + 'beach-retreat.webp' }, { type: 'image', src: F_ + 'worship.webp' }], reactions: { amen: someIds('g_weixun', 7), heart: someIds('g_weixun', 6) } });
+    post(4, 20, { type: 'mood', author: pid('g_zhongxiong'), groupId: 'g_zhongxiong', text: '忠雄小組愛宴，每個人帶一道菜，吃到撐 😋', media: [{ type: 'image', src: F_ + 'love-feast.webp' }, { type: 'image', src: F_ + 'campfire.webp' }, { type: 'image', src: F_ + 'worship.webp' }], reactions: { amen: [], heart: someIds('g_zhongxiong', 8) } });
+
     // ---------- 新朋友（照 SR 的新朋友名單） ----------
     [['蕭宇恩', 'g_jianyu', '跟進關懷', 3], ['潘柏睿', 'g_weixun', '', 1], ['簡志遠', 'g_shuhao', '偶爾聚會', 12]].forEach(([name, gid, status, n], i) => {
       S.intakes['i' + (i + 1)] = { name, gender: '男', birthday: randDate(1995, 2003), mobile: `09${Math.floor(10 + rnd() * 89)}-${String(Math.floor(rnd() * 1e6)).padStart(6, '0')}`,
