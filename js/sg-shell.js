@@ -205,37 +205,23 @@
   const toLand = page === 'world';
   const meBtn = `<a class="sg-corner sg-corner-me" href="me.html"${page === 'me' ? ' aria-current="page"' : ''}><span class="o" id="sgMeAv">${icon('members', 24)}</span><span class="t">我</span></a>`;
   const swBtn = `<a class="sg-corner sg-corner-sw" href="${toLand ? 'land.html' : 'index.html'}"><span class="o">${icon(toLand ? 'land' : 'world', 26)}</span><span class="t">${toLand ? '我的領地' : '世界地圖'}</span></a>`;
-  const bar = add('sg-bottom', `${meBtn}<button type="button" class="sg-ticker" id="sgTicker" aria-label="最新動態${isMap ? '（往上拉打開）' : ''}"><span class="sg-grip" aria-hidden="true"></span><span id="sgTickerTxt">　</span></button>${swBtn}`, document.body);
+  const bar = add('sg-bottom', `${meBtn}<button type="button" class="sg-ticker" id="sgTicker" aria-label="最新動態${isMap ? '（按一下展開）' : ''}"><span id="sgTickerTxt">　</span>${isMap ? '<svg class="sg-tick-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>' : ''}</button>${swBtn}`, document.body);
 
-  // ---------- 手機：動態抽屜（收合／半開／全開），只有拉底部列或抽屜把手才會動，地圖照常拖曳 ----------
+  // ---------- 手機：動態抽屜。不用拖拉（避免跟 Android 返回手勢、上下捲動衝突），按箭頭展開到頂端／收合 ----------
   const drawer = document.querySelector('.sg-world-feed');
   const DESK = window.matchMedia('(min-width: 1024px) and (orientation: landscape)');
   if (drawer) {
-    const STATES = ['closed', 'half', 'full'];
-    let st = 'closed';
-    const set = s => { st = s; drawer.dataset.sheet = s; drawer.style.transform = ''; };
+    const set = s => { drawer.dataset.sheet = s; document.body.classList.toggle('sg-drawer-open', s === 'full'); };
     set('closed');
-    const handles = [drawer.querySelector('.sg-grab'), $('sgTicker')].filter(Boolean);
-    let drag = null;
-    handles.forEach(h => {
-      h.addEventListener('pointerdown', e => { if (DESK.matches) return; drag = { y: e.clientY, t: Date.now(), moved: false, base: drawer.getBoundingClientRect().top }; try { h.setPointerCapture(e.pointerId); } catch (er) { /* */ } });
-      h.addEventListener('pointermove', e => {
-        if (!drag) return; const dy = e.clientY - drag.y; if (Math.abs(dy) > 6) drag.moved = true;
-        if (drag.moved) { drawer.classList.add('dragging'); drawer.style.transform = `translateY(${Math.max(0, drag.base + dy - drawer.offsetTop)}px)`; }
-      });
-      h.addEventListener('pointerup', e => {
-        if (!drag) return; const dy = e.clientY - drag.y, moved = drag.moved; drag = null; drawer.classList.remove('dragging');
-        if (!moved) { set(st === 'closed' ? 'half' : 'closed'); return; }   // 點一下：開／關
-        const i = STATES.indexOf(st); set(STATES[Math.max(0, Math.min(2, i + (dy < -40 ? 1 : dy > 40 ? -1 : 0) * (Math.abs(dy) > 260 ? 2 : 1)))]);
-      });
-      h.addEventListener('pointercancel', () => { drag = null; drawer.classList.remove('dragging'); set(st); });
-    });
-    host.addEventListener('pointerdown', e => { if (!DESK.matches && st !== 'closed' && !e.target.closest('.sg-bottom, .sg-rail, .sg-taskcol, .sg-status')) set('closed'); });
+    const grab = drawer.querySelector('.sg-grab');
+    if (grab) { grab.outerHTML = '<button type="button" class="sg-grab-btn" id="sgDrawerClose" aria-label="收合動態"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>'; }
+    $('sgTicker').addEventListener('click', () => { if (!DESK.matches) set(drawer.dataset.sheet === 'full' ? 'closed' : 'full'); });
+    $('sgDrawerClose').addEventListener('click', () => set('closed'));
   }
   if (!isMap && $('sgTicker')) $('sgTicker').addEventListener('click', () => { location.href = 'index.html'; });
   // 世界頁：問候與今日經文放到動態最上面；我的領地：標題拿掉（地圖上已經有）
   const appbar = $('sgAppbar');
-  if (appbar && page === 'world' && drawer) drawer.insertBefore(appbar, drawer.querySelector('.sg-grab').nextSibling);
+  if (appbar && page === 'world' && drawer) drawer.insertBefore(appbar, (drawer.querySelector('.sg-grab-btn') || drawer.firstChild).nextSibling);
   if (appbar && page === 'land') appbar.classList.add('hidden');
 
   // ---------- 面板：開／關、上一頁、Esc、再按同一顆鈕關閉 ----------
@@ -255,7 +241,7 @@
         frame().src = withPanel(u);
       } else if (u !== curUrl) frame().contentWindow.location.replace(withPanel(u));   // 換面板不留歷史
       curUrl = u;
-      if (drawer && !DESK.matches) drawer.dataset.sheet = 'closed';
+      if (drawer && !DESK.matches) { drawer.dataset.sheet = 'closed'; document.body.classList.remove('sg-drawer-open'); }
       mark(u);
     }
     // 返回：面板裡的頁面有上一層（標題前的「‹」）就回上一層，否則關掉面板回地圖

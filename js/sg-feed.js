@@ -116,7 +116,10 @@
   };
 
   function head(a, when, where, scopeTxt, t) {
-    return `<div class="sg-post-h">${U.avatar(a, 40)}<div style="min-width:0"><div class="who">${esc(a ? a.name : '')}</div><div class="meta">${esc(when)}・${esc(where)}${scopeTxt}</div></div>
+    // 同小組（區長：全部）而且有 LINE ID：點頭像直接開 LINE 私訊
+    const line = a && a.lineId && a.id !== me.personId && (U.isDistrict() || a.groupId === F.D.me.groupId);
+    const av = line ? `<a class="sg-av-line" href="https://line.me/ti/p/~${encodeURIComponent(a.lineId)}" target="_blank" rel="noopener" title="用 LINE 私訊 ${esc(a.name)}">${U.avatar(a, 40)}</a>` : U.avatar(a, 40);
+    return `<div class="sg-post-h">${av}<div style="min-width:0"><div class="who">${esc(a ? a.name : '')}</div><div class="meta">${esc(when)}・${esc(where)}${scopeTxt}</div></div>
       ${t.bg ? `<span class="sg-post-tag" style="background:${t.bg};color:${t.fg}">${t.label}</span>` : ''}</div>`;
   }
 

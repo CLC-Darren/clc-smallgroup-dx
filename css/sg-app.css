@@ -439,3 +439,23 @@ html.dark[data-dk="c"] { --sg-bg: #14272B; --sg-card: #1D3338; --sg-soft: #25404
 html.dark .sg-nf-chip { color: #7EE29B; }
 .sg-nf-in { display: inline-flex; align-items: center; gap: 8px; padding: 4px 4px 4px 12px; border-radius: 999px; background: var(--sg-soft); font-size: 14px; }
 .sg-nf-in .sg-btn { min-height: 30px; padding: 0 12px; border-radius: 999px; font-size: 13px; }
+/* 手機動態抽屜（按箭頭開合）：背後透明看得到地圖，卡片、發文框是實心的 */
+.sg-ticker { flex-direction: row; align-items: center; gap: 8px; }
+.sg-ticker #sgTickerTxt { flex: 1; min-width: 0; }
+.sg-tick-arrow { flex: none; width: 30px; height: 30px; padding: 4px; box-sizing: border-box; border-radius: 50%; background: #007E8A; color: #fff; transition: transform .25s; }
+body.sg-drawer-open .sg-tick-arrow { transform: rotate(180deg); }
+.sg-mapnav .sg-world-feed { background: rgba(10,14,20,.28); box-shadow: none; border-radius: 18px 18px 0 0; height: calc(100vh - var(--sg-hd) - 63px - 22px); height: calc(100dvh - var(--sg-hd) - 63px - 22px - env(safe-area-inset-bottom)); }
+.sg-mapnav .sg-world-feed[data-sheet="closed"] { transform: translateY(105%); }
+.sg-mapnav .sg-world-feed[data-sheet="full"] { transform: translateY(0); }
+.sg-grab-btn { display: flex; margin: 0 auto 2px; width: 44px; height: 30px; border-radius: 15px; border: 0; align-items: center; justify-content: center; background: var(--sg-card); color: var(--sg-text); box-shadow: 0 2px 8px rgba(0,0,0,.2); cursor: pointer; }
+.sg-mapnav .sg-world-feed > .sg-appbar { background: var(--sg-card); border-radius: 14px; padding: 12px 14px; }
+.sg-mapnav .sg-world-feed > div[style*="align-items:center"] { background: var(--sg-card); border-radius: 14px; padding: 8px 10px 0; }
+@media (min-width: 1024px) and (orientation: landscape) {
+  .sg-mapnav .sg-world-feed { background: var(--sg-bg); border-radius: 0; }
+  .sg-mapnav .sg-world-feed > .sg-appbar, .sg-mapnav .sg-world-feed > div[style*="align-items:center"] { background: transparent; padding-left: 0; padding-right: 0; }
+  .sg-grab-btn, .sg-tick-arrow { display: none; }
+}
+/* LINE：小組群組大按鈕、頭像可私訊 */
+.sg-line-btn { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; border-radius: 14px; background: #06C755; color: #fff; font-weight: 800; font-size: 15px; text-decoration: none; margin-bottom: 8px; }
+.sg-av-line { position: relative; display: inline-flex; border-radius: 50%; }
+.sg-av-line::after { content: ''; position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; border-radius: 50%; background: #06C755; box-shadow: 0 0 0 2px var(--sg-card); }
