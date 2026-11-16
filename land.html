@@ -5,16 +5,16 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
   <title>CLC Small Group | 我的領地</title>
   <script>try{var t=localStorage.getItem('sg_theme');if(t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.classList.add('dark')}catch(e){}</script>
-  <link rel="stylesheet" href="css/sg-roster.css?v=20261116t">
-  <link rel="stylesheet" href="css/sg-app.css?v=20261116t">
+  <link rel="stylesheet" href="css/sg-roster.css?v=20261116u">
+  <link rel="stylesheet" href="css/sg-app.css?v=20261116u">
+  <script type="importmap">{ "imports": { "three": "./js/vendor/three/three.module.min.js?v=r160", "three/addons/": "./js/vendor/three/" } }</script>
 </head>
 <body data-page="land" data-roles="district,leader,member">
   <main class="sg-main sg-main-world">
     <div class="sg-appbar" id="sgAppbar"><h1>我的領地</h1></div>
     <div class="sg-world">
-      <section class="sg-world-map sg-garden" aria-label="我的領地（園子）">
-        <canvas id="gardenCanvas" role="img" aria-label="我的園子：可拖曳、縮放；按「建造」放建築，按「開拓」擴大園子"></canvas>
-        <span class="sg-demo-tag">園子試作・尚未存檔</span>
+      <section class="sg-world-map sg-land3d" id="land3d" aria-label="我的領地（3D 小島，可拖曳、縮放）">
+        <span class="sg-demo-tag">小島試作・可拖曳、縮放</span>
       </section>
       <section class="sg-world-feed" aria-label="我的進度">
         <div class="sg-grab" aria-hidden="true"></div>
@@ -31,16 +31,16 @@
       </section>
     </div>
   </main>
-  <script src="js/sg-seed-static.js?v=20261116t"></script>
-  <script src="js/sg-mock-data.js?v=20261116t"></script>
-  <script src="js/sg-mockdb.js?v=20261116t"></script>
-  <script src="js/sg-shell.js?v=20261116t"></script>
-  <script src="js/sg-data.js?v=20261116t"></script>
-  <script src="js/sg-terrain.js?v=20261116t"></script>
-  <script src="js/sg-garden.js?v=20261116t"></script>
-  <script src="js/sg-feed.js?v=20261116t"></script>
-  <script src="js/sg-frame.js?v=20261116t"></script>
-  <script src="js/sg-books.js?v=20261116t"></script>
-  <script src="js/sg-land.js?v=20261116t"></script>
+  <script src="js/sg-seed-static.js?v=20261116u"></script>
+  <script src="js/sg-mock-data.js?v=20261116u"></script>
+  <script src="js/sg-mockdb.js?v=20261116u"></script>
+  <script src="js/sg-shell.js?v=20261116u"></script>
+  <script src="js/sg-data.js?v=20261116u"></script>
+  <script src="js/sg-terrain.js?v=20261116u"></script>
+  <script src="js/sg-feed.js?v=20261116u"></script>
+  <script src="js/sg-frame.js?v=20261116u"></script>
+  <script src="js/sg-books.js?v=20261116u"></script>
+  <script src="js/sg-land.js?v=20261116u"></script>
+  <script type="module" src="js/sg-land3d.js?v=20261116u"></script>
 </body>
 </html>

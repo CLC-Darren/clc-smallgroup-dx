@@ -493,35 +493,8 @@ html.dark .sg-hero { background: linear-gradient(135deg, #2E3647, #1D3338); }
 @media (min-width: 640px) { .sg-hero-stats { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 .sg-mapnav .sg-taskcol { bottom: 22px; gap: 4px; }
 @media (min-width: 1024px) and (orientation: landscape) { .sg-mapnav .sg-taskcol { bottom: 130px; gap: 8px; } }
-/* 我的領地：園子（Gemini 軟陶地形＋GPT 元件，canvas） */
-.sg-garden { background: #e2be89; }
-.sg-garden::after { background: radial-gradient(ellipse at center, rgba(0,0,0,0) 58%, rgba(46,30,14,.24) 100%); }   /* 四角暗角 */
-.sg-garden > canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
-.sg-garden > canvas:active { cursor: grabbing; }
-.sg-gd-ui { position: absolute; inset: 0; z-index: 6; pointer-events: none; font-family: inherit; }
-.sg-gd-ui > * { pointer-events: auto; }
-.sg-gd-top { position: absolute; top: 62px; right: 10px; display: flex; gap: 6px; }
-.sg-gd-btn { font: inherit; font-size: 13px; font-weight: 800; color: #4a3723; background: linear-gradient(180deg, #fffcf6, #f1e3ce); border: 1.5px solid #c7a77e; border-radius: 12px; padding: 6px 11px; box-shadow: 0 2px 0 #b8966b; cursor: pointer; touch-action: manipulation; }
-.sg-gd-btn:active { transform: translateY(1px); box-shadow: none; }
-.sg-gd-btn.on, .sg-gd-btn[aria-pressed="true"] { background: linear-gradient(180deg, #f3b552, #d9912b); border-color: #a66a17; color: #fff; box-shadow: 0 2px 0 #8a560f; }
-.sg-gd-btn.danger { background: linear-gradient(180deg, #e07a68, #c45643); border-color: #9e3e2d; color: #fff; box-shadow: 0 2px 0 #853223; }
-.sg-gd-toast { position: absolute; top: 112px; left: 50%; transform: translateX(-50%); max-width: 86%; background: rgba(65,48,30,.92); color: #fff8eb; padding: 7px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; text-align: center; opacity: 0; transition: opacity .25s; pointer-events: none; }
-.sg-gd-toast.on { opacity: 1; }
-.sg-gd-sel { position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%); display: none; align-items: center; gap: 8px; white-space: nowrap; background: rgba(253,248,238,.96); border: 2px solid #d4b895; border-radius: 14px; padding: 6px 10px; color: #4a3723; font-size: 13px; box-shadow: 0 6px 16px rgba(0,0,0,.18); }
-.sg-gd-sel.on { display: flex; } .sg-gd-sel span { font-size: 11px; color: #7c6348; }
-.sg-gd-building .sg-gd-sel { bottom: 128px; }
-.sg-gd-dock { position: absolute; left: 8px; right: 8px; bottom: 30px; display: flex; gap: 8px; overflow-x: auto; padding: 8px; background: rgba(253,248,238,.95); border: 2px solid #d4b895; border-radius: 18px; box-shadow: 0 8px 24px rgba(74,55,35,.22); scrollbar-width: thin; touch-action: pan-x; }
-.sg-gd-dock[hidden] { display: none; }
-.sg-gd-card { flex: none; width: 88px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 5px; background: #fffaf0; border: 2px solid #dec39f; border-radius: 14px; color: #4a3723; font: inherit; cursor: pointer; }
-.sg-gd-card.on { border-color: #588c51; background: #eef8ec; box-shadow: 0 0 0 3px rgba(88,140,81,.25); }
-.sg-gd-card img { width: 52px; height: 46px; object-fit: contain; pointer-events: none; }
-.sg-gd-card b { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-.sg-gd-card .ctl { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 2px; font-size: 10px; font-weight: 800; }
-.sg-gd-card .sz { background: #ead4b5; border-radius: 6px; padding: 1px 4px; }
-.sg-gd-card .sc { display: flex; align-items: center; background: #f3e6d3; border-radius: 6px; } .sg-gd-card .sc span { padding: 0 3px; } .sg-gd-card .sc i { font-style: normal; font-size: 9px; }
-.sg-gd-building .sg-taskcol { display: none; }   /* 建造時讓出位置給建築選單 */
-@media (min-width: 1024px) and (orientation: landscape) {
-  .sg-gd-top { top: 14px; right: 16px; } .sg-gd-toast { top: 62px; } .sg-gd-btn { font-size: 14px; padding: 7px 13px; }
-  .sg-gd-dock { left: 110px; right: 110px; bottom: 96px; }
-  .sg-gd-sel { bottom: 108px; } .sg-gd-building .sg-gd-sel { bottom: 214px; }
-}
+/* 我的領地：3D 小島（three.js） */
+.sg-land3d { background: #daf0f4; }
+.sg-land3d::after { background: linear-gradient(rgba(255,255,255,.18), rgba(255,255,255,0) 30%); }
+.sg-land3d > canvas { position: absolute; inset: 0; display: block; cursor: grab; }
+.sg-land3d > canvas:active { cursor: grabbing; }
