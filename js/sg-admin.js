@@ -9,7 +9,7 @@
     app = app || {}; lists = lists || {}; groups.sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
   }
   await load();
-  const nav = () => { $('secNav').innerHTML = `<a class="sg-btn" href="index.html" style="margin-bottom:6px">‹ 返回</a>` + SECS.map(([k, l]) => `<button type="button" data-sec="${k}" aria-pressed="${k === sec}">${l}</button>`).join(''); };
+  const nav = () => { $('secNav').innerHTML = SECS.map(([k, l]) => `<button type="button" data-sec="${k}" aria-pressed="${k === sec}">${l}</button>`).join(''); };
   $('secNav').addEventListener('click', e => { const b = e.target.closest('[data-sec]'); if (b) { sec = b.dataset.sec; history.replaceState(null, '', '#' + sec); nav(); render(); } });
   const title = (t, sub) => `<h2 style="font-size:20px;font-weight:800;margin:0 0 4px">${t}</h2>${sub ? `<p class="sg-sub">${sub}</p>` : ''}`;
   const saveApp = async patch => { Object.assign(app, patch); await db.collection('options').doc('app').set(app); U.toast('已儲存'); };

@@ -1,4 +1,4 @@
-/* 漢威牧區｜牧養管理（小組長以上）：組員名單（連到 members.html：每週點名、新朋友都在那裡）、小組基金、年度大總表、會議記錄、牧養手冊 */
+/* 漢威牧區｜牧養管理（小組長以上）：組員名單（members.html，畫面上和其他分頁同一排選單）、小組基金、年度大總表、會議記錄、牧養手冊 */
 (async function () {
   const U = window.SGU, esc = U.esc, $ = U.$, me = U.session;
   const SECS = [['fund', '💰 小組基金'], ['annual', '📊 年度大總表'], ['meet', '🗒️ 會議記錄'], ['book', '📖 牧養手冊']];   // 新朋友→組員名單、活動→地圖右下「活動」、安德烈探訪先拿掉
@@ -19,7 +19,7 @@
   if (h[0] === 'roll') { location.replace('members.html#' + location.hash.slice(1)); return; }   // 每週點名已併進組員名單
   if (SECS.some(s => s[0] === h[0])) { cur.sec = h[0]; if (h[1]) cur.gid = h[1]; if (h[2]) cur.date = h[2]; }
 
-  function nav() { $('secNav').innerHTML = '<a href="members.html" class="sg-secnav-link">👥 組員名單</a>' + SECS.map(([k, l]) => `<button type="button" data-sec="${k}" aria-pressed="${k === cur.sec}">${l}</button>`).join(''); }
+  function nav() { $('secNav').innerHTML = '<a href="members.html">👥 組員名單</a>' + SECS.map(([k, l]) => `<button type="button" data-sec="${k}" aria-pressed="${k === cur.sec}">${l}</button>`).join(''); }
   $('secNav').addEventListener('click', e => { const b = e.target.closest('[data-sec]'); if (b) { cur.sec = b.dataset.sec; cur.date = ''; history.replaceState(null, '', '#' + cur.sec); nav(); render(); } });
   const groupBar = (withAll) => myGroups().length > 1 || withAll
     ? `<div class="sg-chipbar" data-gbar>${withAll ? `<button type="button" data-g="district" aria-pressed="${cur.gid === 'district'}">牧區合計</button>` : ''}${(withAll ? D.groups.filter(g => g.active !== false || (D.annual && D.annual[g.id])) : myGroups()).map(g => `<button type="button" data-g="${g.id}" aria-pressed="${g.id === cur.gid}">${esc(g.name)}${g.active === false ? '（已停用）' : ''}</button>`).join('')}</div>` : '';

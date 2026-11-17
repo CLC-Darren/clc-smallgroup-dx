@@ -164,6 +164,19 @@
       e.preventDefault();
       if (MAPS.includes(f)) window.top.location.href = h; else location.replace(withPanel(h));
     });
+    // 電腦版「回主頁」：放在頁面選單（#secNav）的最後一個；沒有選單的頁面放在標題列右邊。手機版不變（左下返回鈕）。
+    // 面板在 iframe 裡，寬度判斷要看外層視窗
+    let deskMQ = null; try { deskMQ = window.parent.matchMedia('(min-width: 1024px) and (orientation: landscape)'); } catch (e) { /* */ }
+    const setDesk = () => document.documentElement.classList.toggle('sg-desk', !!(deskMQ && deskMQ.matches));
+    setDesk(); if (deskMQ) deskMQ.addEventListener('change', setDesk);
+    const homeChip = () => { const b = document.createElement('button'); b.type = 'button'; b.className = 'sg-home-chip'; b.textContent = '🏠 回主頁'; b.addEventListener('click', () => parentPanel ? parentPanel.close() : (location.href = 'index.html')); return b; };
+    const putHome = () => {
+      const nav = document.getElementById('secNav'), bar = document.getElementById('sgAppbar');
+      if (nav) { if (nav.lastElementChild && nav.lastElementChild.classList.contains('sg-home-chip')) return; nav.querySelectorAll('.sg-home-chip').forEach(x => x.remove()); nav.append(homeChip()); }
+      else if (bar && !bar.querySelector('.sg-home-chip')) bar.append(homeChip());
+    };
+    const watch = () => { putHome(); const nav = document.getElementById('secNav'); if (nav) new MutationObserver(putHome).observe(nav, { childList: true }); };   // 選單會被各頁程式重畫，重畫後補回去
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch); else watch();
     return;
   }
   if (page !== 'world' && page !== 'land') {

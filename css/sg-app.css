@@ -397,7 +397,7 @@ html.sg-panel .sg-hd { display: none; }
 html.sg-panel .sg-main { padding-bottom: 100px; margin-left: 0; }
 @media (min-width: 1024px) and (orientation: landscape) {
   .sg-panelbox { right: 420px; border-right: 1px solid var(--sg-line); }
-  .sg-panel-x { display: flex; }
+  /* 右上返回鈕拿掉：改成頁面選單最後一個「回主頁」（sg-home-chip） */
   .sg-panel-foot { display: none; }
   html.sg-panel .sg-main { padding-bottom: 24px; }
   .sg-mapnav .sg-ticker { visibility: hidden; }   /* 右邊已經有動態欄，不需要跑馬燈 */
@@ -498,3 +498,9 @@ html.dark .sg-hero { background: linear-gradient(135deg, #2E3647, #1D3338); }
 .sg-land3d::after { background: linear-gradient(rgba(255,255,255,.18), rgba(255,255,255,0) 30%); }
 .sg-land3d > canvas { position: absolute; inset: 0; display: block; cursor: grab; }
 .sg-land3d > canvas:active { cursor: grabbing; }
+/* 面板裡的「回主頁」：電腦版放在選單最後一個；手機版用左下返回鈕，不顯示 */
+.sg-home-chip { display: none; }
+html.sg-desk .sg-home-chip { display: inline-flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer; font: inherit; font-weight: 700; font-size: 14px; }
+html.sg-desk .sg-chipbar .sg-home-chip { color: #8A5A16; border-color: #E2C48E; background: #FFF6E5; }
+html.sg-desk.dark .sg-chipbar .sg-home-chip { color: #F3C97A; border-color: rgba(243,201,122,.35); background: rgba(243,201,122,.08); }
+html.sg-desk .sg-appbar > .sg-home-chip { flex: none; height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid #E2C48E; background: #FFF6E5; color: #8A5A16; }
