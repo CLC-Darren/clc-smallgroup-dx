@@ -2,22 +2,20 @@
 (async function () {
   const U = window.SGU, F = window.SGF, esc = U.esc, $ = U.$;
   let D = await F.load();
-  const SECS = [['tasks', '📅 每日紀錄'], ['cards', '📚 經文卡冊'], ['badges', '🏅 徽章'], ['gifts', '🎁 收到的禮物'], ['profile', '👤 我的資料']];
+  const SECS = [['tasks', '📅 每日紀錄'], ['cards', '📚 經文卡冊'], ['badges', '🏅 徽章'], ['gifts', '🎁 收到的禮物'], ['growth', '🌱 生命建造'], ['profile', '👤 我的資料']];
   let sec = SECS.some(s => s[0] === location.hash.slice(1)) ? location.hash.slice(1) : 'tasks';
   let monthOff = 0;
   const nav = () => { $('secNav').innerHTML = SECS.map(([k, l]) => `<button type="button" data-sec="${k}" aria-pressed="${k === sec}">${l}</button>`).join(''); };
   $('secNav').addEventListener('click', e => { const b = e.target.closest('[data-sec]'); if (b) { sec = b.dataset.sec; history.replaceState(null, '', '#' + sec); nav(); render(); } });
   const title = (t, sub) => `<h2 style="font-size:20px;font-weight:800;margin:0 0 4px">${t}</h2>${sub ? `<p class="sg-sub">${sub}</p>` : ''}`;
   const lock = '<p class="sg-note" style="margin:0 0 12px">🔒 這一頁只有你自己看得到。區長、小組長只看得到全組的總數。</p>';
-  const render = () => ({ tasks, cards, badges, gifts, profile })[sec]();
+  const render = () => ({ tasks, cards, badges, gifts, growth, profile })[sec]();
 
   // ---------- 最上面：角色（示意圖，之後換成自己選的 Q 版角色）＋總覽 ----------
   const HERO = '<svg viewBox="0 0 120 150" aria-hidden="true"><ellipse cx="60" cy="142" rx="34" ry="6" fill="rgba(0,0,0,.18)"/><path d="M33 92Q60 80 87 92L95 136Q60 147 25 136z" fill="#3BB3BD"/><path d="M33 92Q60 80 87 92L90 108Q60 98 30 108z" fill="#2F9AA3"/><rect x="43" y="92" width="34" height="40" rx="13" fill="#F4EBDD"/><rect x="46" y="105" width="28" height="6" rx="2" fill="#C98B55"/><circle cx="60" cy="62" r="33" fill="#F2C6A0"/><path d="M27 62Q28 25 60 25Q92 25 93 62Q85 43 60 41Q37 43 27 62z" fill="#5A3B26"/><circle cx="48" cy="67" r="4.5" fill="#2B2420"/><circle cx="72" cy="67" r="4.5" fill="#2B2420"/><circle cx="49.5" cy="65.5" r="1.4" fill="#fff"/><circle cx="73.5" cy="65.5" r="1.4" fill="#fff"/><path d="M52 79Q60 85 68 79" stroke="#B4492F" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="41" cy="76" r="5" fill="#F7A8A0" opacity=".6"/><circle cx="79" cy="76" r="5" fill="#F7A8A0" opacity=".6"/></svg>';
   function hero() {
     const days = D.myDaily.days || {}, read = Object.values(D.myDaily.books || {}).filter(Boolean).length;
-    const ARMOR = window.SG_ARMOR || [], done = D.me.courses || {}, cats = D.lists.courses || [];
-    const catDone = id => { if (id === 'exp' || id === 'bap') return !!done[id]; const c = cats.find(x => x.id === id); return !!c && c.items.every(i => done[i.id]); };
-    const armor = ARMOR.filter(a => a.by.every(catDone)).length;
+    const ARMOR = window.SG_ARMOR || [], armor = ARMOR.filter(a => window.SG_armorLv(D, a.id) > 0).length;
     const cards = new Set((D.myDaily.cards || []).map(c => c.id)).size, allCards = (window.SG_VERSES || []).length;
     const badges = U.badgesOf(D.me, D.myDaily, D.posts, D.lists.courses, D.tasks).size;
     const prayed = D.posts.filter(p => (p.prayedBy || []).includes(U.session.personId)).length;
@@ -105,8 +103,14 @@
     $('sec').innerHTML = title('我的資料', '要修改資料，請告訴你的小組長。') + `
       <section class="sg-card"><div class="sg-card-b" style="display:flex;align-items:center;gap:14px;padding-top:16px">${U.avatar(p, 64)}<div><div style="font-size:20px;font-weight:800">${esc(p.name)}</div><div class="sg-note">${esc(g ? g.name : '漢威牧區')}・${esc(U.ROLE_LABEL[U.session.role])}</div></div></div>
         ${row('小組聚會', g ? U.groupMeetText(g) : '')}${row('手機', p.mobile)}${row('Email', p.email)}${row('LINE ID', p.lineId)}${row('生日', p.birthday ? U.md(p.birthday) : '')}${row('目前服事', (p.ministries || []).join('、'))}
-        ${g && g.lineUrl ? `<a class="sg-item" href="${esc(g.lineUrl)}" target="_blank" rel="noopener"><span class="sg-ic">💬</span><span class="sg-txt">開啟小組 LINE 群組</span>›</a>` : ''}</section>
-      <section class="sg-card" style="margin-top:12px"><div class="sg-card-h">生命建造進度<span class="sg-pill" style="margin-left:auto">${n} / ${items.length}</span></div><div class="sg-card-b">
+        ${g && g.lineUrl ? `<a class="sg-item" href="${esc(g.lineUrl)}" target="_blank" rel="noopener"><span class="sg-ic">💬</span><span class="sg-txt">開啟小組 LINE 群組</span>›</a>` : ''}</section>`;
+  }
+
+  // ---------- 生命建造（獨立系統：課程清單來自設定 D.lists.courses，之後各教會可以自己設定） ----------
+  function growth() {
+    const cats = D.lists.courses || [], done = D.me.courses || {}, items = cats.flatMap(c => c.items), n = items.filter(i => done[i.id]).length;
+    $('sec').innerHTML = title('生命建造', '教會的生命建造程序；完成的課程由小組長登記。') + `
+      <section class="sg-card" ><div class="sg-card-h">我的進度<span class="sg-pill" style="margin-left:auto">${n} / ${items.length}</span></div><div class="sg-card-b">
         <div class="sg-progress" style="margin-bottom:12px"><span style="width:${items.length ? n / items.length * 100 : 0}%"></span></div>
         ${cats.map(c => { const k = c.items.filter(i => done[i.id]).length; return `<div style="display:flex;justify-content:space-between;font-size:14px;padding:6px 0;border-top:1px solid var(--sg-line)"><span>${esc(c.title)}</span><b style="color:${k === c.items.length ? 'var(--sg-teal-text)' : 'var(--sg-muted)'}">${k === c.items.length ? '✓ 完成' : `${k} / ${c.items.length}`}</b></div>`; }).join('')}
       </div></section>`;

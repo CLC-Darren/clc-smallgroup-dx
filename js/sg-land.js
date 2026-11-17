@@ -22,14 +22,12 @@
     tasks(); if (drawn) F.showCard(drawn);
   });
 
-  // ---------- 全副軍裝（生命建造） ----------
+  // ---------- 全副軍裝（完成裝備課程得著、升級；和生命建造無關） ----------
   function armor() {
-    const done = D.me.courses || {}, cats = D.lists.courses || [];
-    const catDone = id => { if (id === 'exp' || id === 'bap') return !!done[id]; const c = cats.find(x => x.id === id); return !!c && c.items.every(i => done[i.id]); };
-    const got = ARMOR.filter(a => a.by.every(catDone)).length;
+    const lv = a => window.SG_armorLv(D, a.id), got = ARMOR.filter(a => lv(a) > 0).length;
     $('landArmor').innerHTML = `<div class="sg-card-h">🛡️ 全副軍裝<span class="sg-note" style="margin-left:auto">${got} / ${ARMOR.length}</span></div>
-      <div class="sg-card-b"><div class="sg-armor">${ARMOR.map(a => { const on = a.by.every(catDone); return `<div class="sg-armor-i${on ? '' : ' off'}" title="${esc(a.hint)}"><span class="b">${a.icon}</span><b>${esc(a.name)}</b><small>${on ? '已穿上' : esc(a.hint)}</small></div>`; }).join('')}</div>
-      <p class="sg-note" style="margin:8px 0 0">以弗所書 6:13–17。跟著教會的生命建造程序一件件穿上；對應方式是示意，之後會調整。Q 版英雄角色在下一階段加入。</p></div>`;
+      <div class="sg-card-b"><div class="sg-armor">${ARMOR.map(a => { const n = lv(a); return `<div class="sg-armor-i${n ? '' : ' off'}" title="${esc(a.topic)}：${esc(a.lessons.join('、'))}"><span class="b">${a.icon}</span><b>${esc(a.name)}</b><small>${n ? `Lv${n}・${esc(a.topic)}` : `學習「${esc(a.topic)}」來得著`}</small></div>`; }).join('')}</div>
+      <p class="sg-note" style="margin:8px 0 0">以弗所書 6:13–17。每件裝備有幾堂小課，學完就能穿上，繼續學就能升級（課程之後開放）。</p></div>`;
   }
 
   // ---------- 聖經主線 ----------

@@ -29,12 +29,16 @@ window.SG_BOOKS = [
   ['1jn', '約翰一書', 'general', 'letter', '約翰的信（一）'], ['2jn', '約翰二書', 'general', 'letter', '約翰的信（二）'], ['3jn', '約翰三書', 'general', 'letter', '約翰的信（三）'], ['jud', '猶大書', 'general', 'letter', '猶大的信'],
   ['rev', '啟示錄', 'rev', 'end', '新耶路撒冷']
 ].map(([id, name, region, kind, rep]) => ({ id, name, region, kind, rep }));
-/** 全副軍裝（以弗所書 6:14–17）；對應生命建造程序為示意，待 Darren 確認 */
+/** 全副軍裝（以弗所書 6:14–17）：跟「生命建造」無關，靠完成裝備課程得著、升級。
+ *  內部對應（只寫在程式註解，畫面上不提神學名詞）：帶子＝神論、護心鏡＝基督論、鞋＝人論、藤牌＝救贖論、頭盔＝末世論、寶劍＝聖靈論。
+ *  每件 3 課，完成第 1 課得著（Lv1），之後每完成一課升一級；課程內容待寫（每課抓重點，不求完整）。 */
 window.SG_ARMOR = [
-  { id: 'belt', name: '真理的帶子', icon: '🎗️', by: ['exp'], hint: '經歷神' },
-  { id: 'breast', name: '公義的護心鏡', icon: '🛡️', by: ['bap'], hint: '受洗' },
-  { id: 'shoes', name: '平安的福音鞋', icon: '👟', by: ['c1'], hint: '完成 C1' },
-  { id: 'shield', name: '信德的藤牌', icon: '🔰', by: ['c2'], hint: '完成 C2' },
-  { id: 'helmet', name: '救恩的頭盔', icon: '⛑️', by: ['c3'], hint: '完成 C3' },
-  { id: 'sword', name: '聖靈的寶劍', icon: '🗡️', by: ['c4', 'c5'], hint: '完成 C4、C5' }
+  { id: 'belt', name: '真理的帶子', icon: '🎗️', topic: '認識獨一的真神', lessons: ['神親自向人說話', '神是聖潔的', '神是信實的'] },
+  { id: 'breast', name: '公義的護心鏡', icon: '🛡️', topic: '基督是我們的義', lessons: ['道成了肉身', '無罪的一生', '十字架的代贖'] },
+  { id: 'shoes', name: '平安的福音鞋', icon: '👟', topic: '人的光景與和好', lessons: ['照神形像被造', '罪帶來的隔絕', '因福音與神和好'] },
+  { id: 'shield', name: '信德的藤牌', icon: '🔰', topic: '因信得救', lessons: ['本乎恩，也因著信', '稱義與重生', '得救的確據'] },
+  { id: 'helmet', name: '救恩的頭盔', icon: '⛑️', topic: '得救的盼望', lessons: ['基督必再來', '身體復活', '將來的榮耀'] },
+  { id: 'sword', name: '聖靈的寶劍', icon: '🗡️', topic: '聖靈與神的話', lessons: ['聖經是神所默示', '聖靈光照我們明白', '靈與道的能力'] }
 ];
+/** 已完成幾課（0～3）：D.myDaily.armor = { belt: 1, ... }；之後接存檔 */
+window.SG_armorLv = (D, id) => Math.max(0, Math.min(3, ((D && D.myDaily && D.myDaily.armor) || {})[id] || 0));

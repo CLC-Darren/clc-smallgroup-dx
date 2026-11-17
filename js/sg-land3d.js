@@ -8,7 +8,7 @@ const box = document.getElementById('land3d');
 if (box) start(box);
 
 function start(box) {
-  const V = '20261116w', IMG = 'images/garden/';
+  const V = '20261117a', IMG = 'images/garden/';
   const P = {
     shoal: 0x7FE0CF, riverLake: 0x4FCFD0, sand: 0xF3E2A6, grass: 0x9CCB45, dryLand: 0xC3C85A, forest: 0x4E8F48,
     cliffBase: 0x5E7468, limestone: 0xEFE6D2, plateau: 0xEFA65A, whiteStone: 0xF4EBDD, wood: 0xC98B55, redTile: 0xE86F51, tealRoof: 0x3BB3BD, tentCloth: 0xFFFFFF
