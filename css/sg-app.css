@@ -498,9 +498,25 @@ html.dark .sg-hero { background: linear-gradient(135deg, #2E3647, #1D3338); }
 .sg-land3d::after { background: linear-gradient(rgba(255,255,255,.18), rgba(255,255,255,0) 30%); }
 .sg-land3d > canvas { position: absolute; inset: 0; display: block; cursor: grab; }
 .sg-land3d > canvas:active { cursor: grabbing; }
-/* 面板裡的「回主頁」：電腦版放在選單最後一個；手機版用左下返回鈕，不顯示 */
+/* 面板裡的「回主頁」：電腦版（有滑鼠，橫直都算）放在選單最後一個，樣式和其他選項一樣；手機版用左下返回鈕，不顯示 */
 .sg-home-chip { display: none; }
-html.sg-desk .sg-home-chip { display: inline-flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer; font: inherit; font-weight: 700; font-size: 14px; }
-html.sg-desk .sg-chipbar .sg-home-chip { color: #8A5A16; border-color: #E2C48E; background: #FFF6E5; }
-html.sg-desk.dark .sg-chipbar .sg-home-chip { color: #F3C97A; border-color: rgba(243,201,122,.35); background: rgba(243,201,122,.08); }
-html.sg-desk .sg-appbar > .sg-home-chip { flex: none; height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid #E2C48E; background: #FFF6E5; color: #8A5A16; }
+html.sg-desk .sg-home-chip { display: inline-flex; }
+html.sg-desk .sg-appbar > .sg-home-chip { flex: none; align-items: center; gap: 4px; height: 40px; padding: 0 14px; border: 0; border-radius: 10px; background: transparent; color: var(--sg-text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+html.sg-desk .sg-appbar > .sg-home-chip:hover, html.sg-desk .sg-split > .sg-chipbar .sg-home-chip:hover { background: var(--sg-soft); }
+/* 電腦版面板：選單一律在左邊直排（面板 iframe 寬度可能不到 1024，所以看外層判斷） */
+html.sg-desk .sg-appbar { padding: 18px 24px 8px; }
+html.sg-desk .sg-page { padding: 0 24px 24px; }
+html.sg-desk .sg-split { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; align-items: start; }
+html.sg-desk .sg-split > .sg-chipbar { flex-direction: column; overflow: visible; gap: 2px; padding: 0; position: sticky; top: 12px; }
+html.sg-desk .sg-split > .sg-chipbar button, html.sg-desk .sg-split > .sg-chipbar a { height: 40px; border: 0; background: transparent; border-radius: 10px; justify-content: flex-start; font-weight: 600; }
+html.sg-desk .sg-split > .sg-chipbar [aria-pressed="true"], html.sg-desk .sg-split > .sg-chipbar [aria-current="true"] { background: var(--sg-hl); color: var(--sg-teal-text); font-weight: 800; }
+/* 組員名單：版面跟牧養管理其他分頁一樣（左選單、右內容） */
+html.sg-desk body[data-page="members"] main { display: grid; grid-template-columns: 244px minmax(0, 1fr); align-items: start; }
+html.sg-desk body[data-page="members"] main > .sg-appbar { grid-column: 1 / -1; }
+html.sg-desk body[data-page="members"] main > .sg-page { padding: 0 0 0 24px; position: sticky; top: 12px; }
+html.sg-desk body[data-page="members"] main > .sg-page > .sg-chipbar { flex-direction: column; overflow: visible; gap: 2px; padding: 0; }
+html.sg-desk body[data-page="members"] main > .sg-page > .sg-chipbar a, html.sg-desk body[data-page="members"] main > .sg-page > .sg-chipbar button { height: 40px; border: 0; background: transparent; border-radius: 10px; justify-content: flex-start; font-weight: 600; }
+html.sg-desk body[data-page="members"] main > .sg-page > .sg-chipbar [aria-current="true"] { background: var(--sg-hl); color: var(--sg-teal-text); font-weight: 800; }
+/* 電腦（有滑鼠）：面板不用左下返回鈕；直式視窗的動態抽屜拉起來時有實心底，不浮在地圖上 */
+html.sg-pc .sg-panel-foot { display: none; }
+html.sg-pc .sg-mapnav .sg-world-feed { background: var(--sg-bg); box-shadow: 0 -8px 24px rgba(0,0,0,.18); }

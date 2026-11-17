@@ -166,9 +166,10 @@
     });
     // 電腦版「回主頁」：放在頁面選單（#secNav）的最後一個；沒有選單的頁面放在標題列右邊。手機版不變（左下返回鈕）。
     // 面板在 iframe 裡，寬度判斷要看外層視窗
-    let deskMQ = null; try { deskMQ = window.parent.matchMedia('(min-width: 1024px) and (orientation: landscape)'); } catch (e) { /* */ }
-    const setDesk = () => document.documentElement.classList.toggle('sg-desk', !!(deskMQ && deskMQ.matches));
-    setDesk(); if (deskMQ) deskMQ.addEventListener('change', setDesk);
+    // 電腦（有滑鼠）不論橫直、或橫向大螢幕，都算電腦版
+    let deskMQ = [], pw = window; try { pw = window.parent; deskMQ = [pw.matchMedia('(min-width: 1024px) and (orientation: landscape)'), pw.matchMedia('(hover: hover) and (pointer: fine) and (min-width: 700px)')]; } catch (e) { /* */ }
+    const setDesk = () => document.documentElement.classList.toggle('sg-desk', deskMQ.some(m => m.matches));
+    setDesk(); deskMQ.forEach(m => m.addEventListener('change', setDesk));
     const homeChip = () => { const b = document.createElement('button'); b.type = 'button'; b.className = 'sg-home-chip'; b.textContent = '🏠 回主頁'; b.addEventListener('click', () => parentPanel ? parentPanel.close() : (location.href = 'index.html')); return b; };
     const putHome = () => {
       const nav = document.getElementById('secNav'), bar = document.getElementById('sgAppbar');
@@ -184,6 +185,7 @@
     location.replace(last + '#p=' + encodeURIComponent(FILE + location.search + location.hash)); return;
   }
   try { sessionStorage.setItem('sg_lastmap', FILE); } catch (e) { /* */ }
+  { const pc = window.matchMedia('(hover: hover) and (pointer: fine) and (min-width: 700px)'), set = () => document.documentElement.classList.toggle('sg-pc', pc.matches); set(); pc.addEventListener('change', set); }   // 電腦（有滑鼠）：直式視窗也不用手機的左下返回鈕
 
   // ---------- 外框（學遊戲介面，每頁位置相同） ----------
   // 狀態列＋活動（左上）／控制列（左）／任務列（右，只在地圖頁）／左下「我」／右下 世界地圖⇄我的領地／動態跑馬燈（底部中間）
